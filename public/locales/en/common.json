@@ -2,5 +2,13 @@
     "app_name": "Open Seat",
     "project_open": "Open project",
     "project_new": "New project",
-    "setup_welcome": "Setup"
+    "next": "Next",
+    "setup": {
+        "welcome": "Setup",
+        "text": "To create a new seating plan you have to answer a few questions first.",
+        "plan_name": "Plan Name",
+        "initial_name": "Untitled",
+        "select_schematic_label": "Please choose your floor schematic.",
+        "select_schematic": "Select floor schematic"
+    }
 }

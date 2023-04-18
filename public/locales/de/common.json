@@ -2,5 +2,13 @@
     "app_name": "Open Seat",
     "project_open": "Projekt öffnen",
     "project_new": "Projekt erstellen",
-    "setup_welcome": "Einrichtung"
+    "next": "weiter",
+    "setup": {
+        "welcome": "Einrichtung",
+        "text": "Zuerst musst du ein paar Fragen beantworten bevor es losgehen kann.",
+        "plan_name": "Plan Name",
+        "initial_name": "Unbenannt",
+        "select_schematic_label": "Wähle bitte deinen Flurplan aus.",
+        "select_schematic": "Flurplan auswählen."
+    }
 }

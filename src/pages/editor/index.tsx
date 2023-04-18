@@ -1,5 +1,6 @@
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
+import { useRouter } from "next/router";
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -14,13 +15,12 @@ export async function getStaticProps({ locale }) {
 }
 
 export default function Router() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation('common')
+  const router = useRouter()
+  const { databasePath } = router.query
 
   return (
-    <>
-      <div className="flex min-h-screen flex-col justify-center content-center p-24">
-        <h1>{t("setup_welcome")}</h1>
-      </div>
-    </>
+    <div className="flex min-h-screen flex-col content-center p-24">
+    </div>
   )
 }
