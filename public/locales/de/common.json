@@ -3,12 +3,18 @@
     "project_open": "Projekt öffnen",
     "project_new": "Projekt erstellen",
     "next": "weiter",
+    "file_path": "Dateipfad",
+    "level": "Level",
+    "name": "Name",
+    "up": "hoch",
+    "down": "runter",
+    "delete": "löschen",
     "setup": {
         "welcome": "Einrichtung",
         "text": "Zuerst musst du ein paar Fragen beantworten bevor es losgehen kann.",
         "plan_name": "Plan Name",
         "initial_name": "Unbenannt",
         "select_schematic_label": "Wähle bitte deinen Flurplan aus.",
-        "select_schematic": "Flurplan auswählen."
+        "select_schematic": "Flurplan hinzufügen"
     }
 }

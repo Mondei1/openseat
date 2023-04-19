@@ -3,12 +3,18 @@
     "project_open": "Open project",
     "project_new": "New project",
     "next": "Next",
+    "file_path": "File path",
+    "level": "Level",
+    "name": "Name",
+    "up": "Up",
+    "down": "Down",
+    "delete": "Delete",
     "setup": {
         "welcome": "Setup",
         "text": "To create a new seating plan you have to answer a few questions first.",
         "plan_name": "Plan Name",
         "initial_name": "Untitled",
         "select_schematic_label": "Please choose your floor schematic.",
-        "select_schematic": "Select floor schematic"
+        "select_schematic": "Add floor schematic"
     }
 }

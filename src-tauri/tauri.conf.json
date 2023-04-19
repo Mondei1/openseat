@@ -81,7 +81,8 @@
         "resizable": true,
         "title": "Open Seat",
         "width": 1200,
-        "decorations": false
+        "decorations": false,
+        "transparent": true
       }
     ]
   }
