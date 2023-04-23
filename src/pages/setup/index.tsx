@@ -2,13 +2,14 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip } from "@nextui-org/react";
-import { Key, useState } from "react";
+import { Key, useEffect, useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
-import { parseArgs } from "util";
 import { IconButton } from "@/components/iconButton";
 import { DeleteIcon } from "@/components/icons/deleteIcon";
 import { ArrowUpIcon } from "@/components/icons/arrowUpIcon";
 import { ArrowDownIcon } from "@/components/icons/arrowDownIcon";
+import Database from "tauri-plugin-sql-api";
+import { CURRENT_DATABASE_VERSION, DatabaseInfoKey } from "@/components/database";
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -53,13 +54,18 @@ export default function Router() {
 
   interface ISchematicRow {
     level: number,
-    name: String,
-    path: String
+    name: string,
+    path: string
   }
 
   let [isNext, setNext] = useState(false)
+  let [databaseName, setDatabaseName] = useState("");
   let [schematics, setSchematics] = useState<ISchematicRow[]>([]);
 
+  useEffect(() => {
+    setDatabaseName(t("setup.initial_name")!)
+  })
+  
   async function addSchematic() {
     const filePath = await open({
       filters: [{
@@ -69,11 +75,11 @@ export default function Router() {
       multiple: false
     });
 
-    let parsedPath: String;
+    let parsedPath: string;
     if (Array.isArray(filePath)) {
       parsedPath = filePath[0];
     } else if (typeof filePath === "string") {
-      parsedPath = filePath as String;
+      parsedPath = filePath as string;
     } else {
       return;
     }
@@ -93,13 +99,15 @@ export default function Router() {
   }
 
   function moveSchematic(level: number, direction: 'UP' | 'DOWN') {
-    const clone = schematics
+    let clone = [...schematics]
+    console.log(clone);
+
     const indexSrc = clone.findIndex(x => x.level === level)
 
     if (indexSrc === undefined || indexSrc === -1) {
       return
     }
-    
+
     const indexDst = direction == 'UP' ? indexSrc - 1 : indexSrc + 1;
 
     console.log("Source index: " + indexSrc);
@@ -108,19 +116,21 @@ export default function Router() {
     if (indexDst >= clone.length || indexDst < 0) {
       return
     }
-
-    console.log(clone);
-    
     console.log("Swap ", clone[indexSrc].path + " with " + clone[indexDst].path)
 
-    const swapSrc = clone[indexSrc]
-    const swapDst = clone[indexDst]
+    const srcClone = clone[indexSrc]
+    clone[indexSrc] = clone[indexDst]
+    clone[indexDst] = srcClone
 
+    // Fix leveling
     for (let i = 0; i < clone.length; i++) {
       clone[i].level = i + 1
+      console.log(`Set ${clone[i].path} to ${i + 1}`);
     }
 
-    setSchematics(clone)
+    clone = clone.sort((a, b) => a.level - b.level)
+
+    setSchematics([...clone])
   }
 
   function deleteSchematic(index: number) {
@@ -129,11 +139,83 @@ export default function Router() {
     setSchematics(clone)
   }
 
-  function setupDatabase() {
+  async function setupDatabase() {
     setNext(true);
+
+    // @ts-ignore
+    const fs = window.__TAURI__.fs;
+
+    if (await fs.exists(databasePath as string)) {
+      await fs.removeFile(databasePath as string)
+      console.log(`Deleted file ${databasePath} because it already exists.`);
+    }
+
+    const db = await Database.load("sqlite:" + databasePath)
+
+    // Create table storing the current schema version allowing for future migrations. 
+    await db.execute("BEGIN TRANSACTION;")
+
+    try {
+      await db.execute("CREATE TABLE IF NOT EXISTS info (`key` INTEGER NOT NULL PRIMARY KEY, `data` TEXT NOT NULL);")
+      await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Version, CURRENT_DATABASE_VERSION])
+      await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Name, databaseName])
+  
+      await db.execute(`CREATE TABLE IF NOT EXISTS participant (
+        id INTEGER PRIMARY KEY,
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL
+      );`)
+      await db.execute(`CREATE TABLE IF NOT EXISTS guest (
+        id INTEGER PRIMARY KEY,
+        participant_id INT NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        FOREIGN KEY (participant_id)
+          REFERENCES participant (id)
+      );`)
+  
+      await db.execute(`CREATE TABLE IF NOT EXISTS floor (
+        id INTEGER PRIMARY KEY,
+        level INT NOT NULL UNIQUE,
+        name TEXT NOT NULL
+      )`)
+      await db.execute(`CREATE TABLE IF NOT EXISTS floorplan (
+        id INTEGER PRIMARY KEY,
+        floor_id INT NOT NULL,
+        image BLOB NOT NULL,
+        FOREIGN KEY (floor_id)
+          REFERENCES floor (id)
+      )`)
+
+      for (let i = 0; i < schematics.length; i++) {
+        const schematic = schematics[i]
+
+        try {
+          let image = await fs.readBinaryFile(schematic.path)
+
+          let floorId = (await db.execute(`INSERT INTO floor (level, name) VALUES ($1, $2)`, [schematic.level, schematic.name])).lastInsertId
+          console.log("Inserted ID: " + floorId);
+          
+          await db.execute(`INSERT INTO floorplan (floor_id, image) VALUES ($1, $2)`, [floorId, Array.from(image)])
+        } catch (err) {
+          console.error("Failed to read image from disk:", err);
+          console.error(`Skip import of floor ${schematic.name}`);
+          
+        }
+      }
+
+      await db.execute("COMMIT;")
+    } catch (err) {
+      await db.execute("ROLLBACK;")
+      console.error("SQLite failed with the following error and all changes were undone:", err);
+    }
+
+    db.close()
+    router.push("/editor", { query: { databasePath } })
   }
 
   const renderCell = (schematic: ISchematicRow, columnKey: React.Key) => {
+    console.log("Render cell: ", schematic);
+
     // @ts-ignore
     const cellValue: any = schematic[columnKey];
     switch (columnKey) {
@@ -186,13 +268,20 @@ export default function Router() {
       <p>Saving at: {databasePath}</p>
 
       <Spacer y={3}></Spacer>
+
       <Input
         clearable
         bordered
         underlined
+        required
+        type="text"
+        maxLength={255}
+        minLength={1}
         labelPlaceholder={t("setup.plan_name")!}
         initialValue={t("setup.initial_name")!}
+        onChange={e => setDatabaseName(e.target.value)}
         color="primary"
+        className="w-fit border-none"
       />
 
       <Spacer y={1.5}></Spacer>
@@ -246,7 +335,7 @@ export default function Router() {
 
       <Spacer y={4}></Spacer>
       {!isNext &&
-        <Button color="gradient" auto onPress={setupDatabase}>
+        <Button color="gradient" className="w-full" auto onPress={setupDatabase} disabled={databaseName.length === 0 || schematics.length === 0}>
           {t("next")}
         </Button>
       }

@@ -11,6 +11,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 
 import { useTheme as useNextTheme } from 'next-themes'
 import { Switch, useTheme } from '@nextui-org/react'
+import { invoke } from '@tauri-apps/api'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -49,9 +50,12 @@ export default function Home() {
       }
     })
 
-    const db = await Database.load("sqlite:" + filePath)
-    console.log(filePath)
+    //const { invoke } = window.__TAURI__.tauri
+    //console.log(invoke);
+    
+    //console.log("Locale: " + await invoke("get_default_locale"))
   }
+  
 
   return (
     <main className="min-h-screen justify-center">
@@ -90,7 +94,7 @@ export default function Home() {
             <Card>
               <Link href=''>
                 <Card.Body className="flex justify-items">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" stroke-linejoin="round">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                     <path d="M14 3v4a1 1 0 0 0 1 1h4"></path>
                     <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z"></path>
