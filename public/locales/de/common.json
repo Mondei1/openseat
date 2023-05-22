@@ -16,5 +16,14 @@
         "initial_name": "Unbenannt",
         "select_schematic_label": "Wähle bitte deinen Flurplan aus.",
         "select_schematic": "Flurplan hinzufügen"
+    },
+    "map": {
+        "close_project": "Projekt schließen",
+        "load": "Karte wird erstellt",
+        "select_level": "Stockwerk auswählen",
+        "select_layer": "Stockwerk wechseln",
+        "edit_layer": "Sitze bearbeiten",
+        "edit_guests": "Gäste verwalten",
+        "search": "Gast suchen"
     }
 }

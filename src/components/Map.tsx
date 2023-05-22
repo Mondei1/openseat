@@ -3,27 +3,33 @@ import { ImageOverlay, MapContainer, Marker, Popup, TileLayer } from "react-leaf
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
-import { CRS } from 'leaflet';
+import { CRS, latLngBounds } from 'leaflet';
 
 export default function Map(props: any) {
     console.log("Display map", props.mapUrl);
 
     let { mapWidth, mapHeight } = props    
+    mapWidth *= 0.7
+    mapHeight *= 0.7
+
+    let bounds = latLngBounds([0.0, mapWidth], [mapHeight, 0.0])
 
     return (
         <MapContainer
-            center={[0, 0]}
-            zoom={3}
+            center={bounds.getCenter()}
+            zoom={0}
+            minZoom={0}
+            maxZoom={3}
+            zoomControl={false}
             scrollWheelZoom={true}
+            maxBoundsViscosity={0.8}
             className={styles.map}
-            bounds={[[0.0, mapWidth], [mapHeight, 0.0]]}
+            maxBounds={bounds}
             crs={CRS.Simple}
         >
             
             <ImageOverlay
                 bounds={[[0.0, mapWidth], [mapHeight, 0.0]]}
-                zIndex={10}
-                opacity={1}
                 url={props.mapUrl}>
             </ImageOverlay>
 

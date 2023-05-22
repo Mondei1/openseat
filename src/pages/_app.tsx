@@ -1,5 +1,6 @@
 import '@/styles/globals.css'
 import '../styles/transitions.css';
+import '../styles/editor.css'
 import { NextUIProvider, createTheme } from '@nextui-org/react'
 import { appWithTranslation } from 'next-i18next'
 import { ThemeProvider } from 'next-themes'

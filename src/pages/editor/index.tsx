@@ -5,6 +5,13 @@ import { ComponentType, useEffect, useState } from "react";
 import Database from "tauri-plugin-sql-api";
 import { DatabaseInfoKey, getDatabaseInfo, getFloorImage, getFloors } from "@/components/database";
 import dynamic from "next/dynamic";
+import { Dropdown, Input, Loading, Text, Tooltip } from "@nextui-org/react";
+import { SearchIcon } from "@/components/icons/searchIcon";
+import { LayerIcon } from "@/components/icons/layerIcon";
+import { EditIcon } from "@/components/icons/editIcon";
+import { UsersIcon } from "@/components/icons/usersIcon";
+import { ArrowDownIcon } from "@/components/icons/arrowDownIcon";
+import { ArrowLeftIcon } from "@/components/icons/arrowLeftIcon";
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -30,7 +37,7 @@ export default function Router() {
   let [mapHeight, setMapHeight] = useState(0)
   let [mapWidth, setMapWidth] = useState(0)
 
-  async function test() {
+  async function loadImage() {
     const db = await Database.load("sqlite:" + databasePath as string)
     console.log("Version: ", await getDatabaseInfo(db, DatabaseInfoKey.Version))
 
@@ -50,7 +57,7 @@ export default function Router() {
         let image = new Image()
         image.src = reader.result?.toString()!!
         console.log("Load image ...");
-        
+
 
         image.onload = () => {
           console.log("Width: ", image.width, " Height: ", image.height);
@@ -66,15 +73,53 @@ export default function Router() {
     }
   }
 
+  function back() {
+    router.push({
+      pathname: "/"
+    })
+  }
+
   useEffect(() => {
-    test()
+    loadImage()
   }, [])
 
   return (
-    <div id="map">
-      {mapState && <>
-        <Map {...{ mapUrl, mapWidth, mapHeight }}></Map>
-      </>}
-    </div>
+    <>
+      <div className="flex controlpanel">
+        <div className="flex w-full justify-start items-center">
+          <Tooltip onClick={back} content={t("map.close_project")} placement="bottomStart">
+            <ArrowLeftIcon />
+          </Tooltip>
+        </div>
+        <div className="flex w-full gap-10 p-2 justify-center items-center">
+          <Tooltip content={t("map.select_layer")} placement="bottom">
+            <LayerIcon />
+            <Text className="ml-3">{t("map.select_layer")}</Text>
+          </Tooltip>
+          <Tooltip content={t("map.edit_layer")} placement="bottom">
+            <EditIcon />
+            <Text className="ml-3">{t("map.edit_layer")}</Text>
+          </Tooltip>
+          <Tooltip content={t("map.edit_guests")} placement="bottom">
+            <UsersIcon />
+            <Text className="ml-3">{t("map.edit_guests")}</Text>
+          </Tooltip>
+        </div>
+        <div className="flex w-full justify-end items-center">
+          <SearchIcon />
+        </div>
+      </div>
+      <div id="map">
+        {mapState && <>
+          <Map {...{ mapUrl, mapWidth, mapHeight }}></Map>
+        </>}
+        {!mapState && <>
+          <div className="flex w-full h-full justify-center ">
+
+          </div>
+          <Loading>{t("map.load")}</Loading>
+        </>}
+      </div>
+    </>
   )
 }
