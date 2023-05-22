@@ -143,7 +143,7 @@ export default function Router() {
     setNext(true);
 
     // @ts-ignore
-    const fs = window.__TAURI__.fs;
+    const fs: any = window.__TAURI__.fs;
 
     if (await fs.exists(databasePath as string)) {
       await fs.removeFile(databasePath as string)
@@ -163,12 +163,15 @@ export default function Router() {
       await db.execute(`CREATE TABLE IF NOT EXISTS participant (
         id INTEGER PRIMARY KEY,
         first_name VARCHAR(255) NOT NULL,
-        last_name VARCHAR(255) NOT NULL
+        last_name VARCHAR(255) NOT NULL,
+        guest_amount VARCHAR(255) NOT NULL,
+        guests_checkedin VARCHAR(255) NOT NULL
       );`)
       await db.execute(`CREATE TABLE IF NOT EXISTS guest (
         id INTEGER PRIMARY KEY,
         participant_id INT NOT NULL,
         last_name VARCHAR(255) NOT NULL,
+        first_name VARCHAR(255) NOT NULL,
         FOREIGN KEY (participant_id)
           REFERENCES participant (id)
       );`)
@@ -176,14 +179,8 @@ export default function Router() {
       await db.execute(`CREATE TABLE IF NOT EXISTS floor (
         id INTEGER PRIMARY KEY,
         level INT NOT NULL UNIQUE,
-        name TEXT NOT NULL
-      )`)
-      await db.execute(`CREATE TABLE IF NOT EXISTS floorplan (
-        id INTEGER PRIMARY KEY,
-        floor_id INT NOT NULL,
-        image BLOB NOT NULL,
-        FOREIGN KEY (floor_id)
-          REFERENCES floor (id)
+        name TEXT NOT NULL,
+        image BLOB NOT NULL
       )`)
 
       for (let i = 0; i < schematics.length; i++) {
@@ -192,10 +189,8 @@ export default function Router() {
         try {
           let image = await fs.readBinaryFile(schematic.path)
 
-          let floorId = (await db.execute(`INSERT INTO floor (level, name) VALUES ($1, $2)`, [schematic.level, schematic.name])).lastInsertId
-          console.log("Inserted ID: " + floorId);
-          
-          await db.execute(`INSERT INTO floorplan (floor_id, image) VALUES ($1, $2)`, [floorId, Array.from(image)])
+          let floorId = (await db.execute(`INSERT INTO floor (level, name, image) VALUES ($1, $2, $3)`, [schematic.level, schematic.name, Array.from(image)])).lastInsertId
+          console.debug("Inserted ID: " + floorId);
         } catch (err) {
           console.error("Failed to read image from disk:", err);
           console.error(`Skip import of floor ${schematic.name}`);
@@ -210,7 +205,12 @@ export default function Router() {
     }
 
     db.close()
-    router.push("/editor", { query: { databasePath } })
+    router.push({
+      pathname: "/editor",
+      query: {
+        databasePath
+      }
+    })
   }
 
   const renderCell = (schematic: ISchematicRow, columnKey: React.Key) => {

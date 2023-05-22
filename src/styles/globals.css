@@ -23,7 +23,7 @@ body {
 
 .titlebar {
   height: 30px;
-  background: rgba(var(--background));
+  background: rgba(0, 0, 0, .5);
   backdrop-filter: blur(30px);
   user-select: none;
   display: flex;

@@ -35,27 +35,65 @@ export default function Home() {
   const { t, i18n } = useTranslation('common');
   const router = useRouter();
 
-  async function handleNewFile() {
-    const filePath = await save({
+  async function newProject() {
+    let databasePath = await save({
       filters: [{
         name: 'OpenSeat database',
         extensions: ['osdb']
       }]
     });
 
+    if (databasePath === null) {
+      return
+    }
+
+    if (!databasePath.toLowerCase().endsWith(".osdb")) {
+      databasePath += ".osdb"
+    }
+
     router.push({
       pathname: "/setup",
       query: {
-        databasePath: filePath
+        databasePath
       }
     })
 
     //const { invoke } = window.__TAURI__.tauri
     //console.log(invoke);
-    
+
     //console.log("Locale: " + await invoke("get_default_locale"))
   }
-  
+
+  async function openProject() {
+    let databasePath = await open({
+      multiple: false,
+      filters: [{
+        name: 'OpenSeat database',
+        extensions: ['osdb'],
+      }]
+    });
+
+    if (databasePath === null) {
+      return
+    }
+
+    // We should never hit that path since "multiple" is disabled above.
+    if (Array.isArray(databasePath)) {
+      return;
+    }
+
+    if (!databasePath.toLowerCase().endsWith(".osdb")) {
+      databasePath += ".osdb"
+    }
+
+    router.push({
+      pathname: "/editor",
+      query: {
+        databasePath
+      }
+    })
+  }
+
 
   return (
     <main className="min-h-screen justify-center">
@@ -75,7 +113,7 @@ export default function Home() {
         <Grid.Container gap={8} justify="center">
           <Grid xs={6}>
             <Card>
-              <Link href='#' onClick={handleNewFile}>
+              <Link href="#" onClick={newProject}>
                 <Card.Body className="flex justify-items">
                   <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -92,7 +130,7 @@ export default function Home() {
           </Grid>
           <Grid xs={6}>
             <Card>
-              <Link href=''>
+              <Link href='' onClick={openProject}>
                 <Card.Body className="flex justify-items">
                   <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" fill="none" strokeLinecap="round" strokeLinejoin="round">
                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
