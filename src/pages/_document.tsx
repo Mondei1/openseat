@@ -1,4 +1,4 @@
-import Titlebar from '@/components/titlebar'
+import Titlebar from '@/components/Titlebar'
 import { Html, Head, Main, NextScript } from 'next/document'
 
 export default function Document() {

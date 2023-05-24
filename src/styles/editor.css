@@ -23,3 +23,17 @@
     background-color: #fff !important;
     z-index: 1 !important;
 }
+
+.map-edit-mode {
+    animation: edit-begin .5s ease-in-out;
+    background-color: rgba(255, 111, 111, 0.239);
+}
+
+@keyframes edit-begin {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}

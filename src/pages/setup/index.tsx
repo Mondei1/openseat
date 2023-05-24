@@ -4,12 +4,12 @@ import { useRouter } from "next/router";
 import { Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip } from "@nextui-org/react";
 import { Key, useEffect, useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
-import { IconButton } from "@/components/iconButton";
-import { DeleteIcon } from "@/components/icons/deleteIcon";
-import { ArrowUpIcon } from "@/components/icons/arrowUpIcon";
-import { ArrowDownIcon } from "@/components/icons/arrowDownIcon";
+import { IconButton } from "@/components/IconButton";
+import { DeleteIcon } from "@/components/icons/DeleteIcon";
+import { ArrowUpIcon } from "@/components/icons/ArrowUpIcon";
+import { ArrowDownIcon } from "@/components/icons/ArrowDownIcon";
 import Database from "tauri-plugin-sql-api";
-import { CURRENT_DATABASE_VERSION, DatabaseInfoKey } from "@/components/database";
+import { CURRENT_DATABASE_VERSION, DatabaseInfoKey } from "@/components/Database";
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -167,20 +167,44 @@ export default function Router() {
         guest_amount VARCHAR(255) NOT NULL,
         guests_checkedin VARCHAR(255) NOT NULL
       );`)
-      await db.execute(`CREATE TABLE IF NOT EXISTS guest (
+
+      /*await db.execute(`CREATE TABLE IF NOT EXISTS guest (
         id INTEGER PRIMARY KEY,
         participant_id INT NOT NULL,
         last_name VARCHAR(255) NOT NULL,
         first_name VARCHAR(255) NOT NULL,
         FOREIGN KEY (participant_id)
           REFERENCES participant (id)
-      );`)
+      );`)*/
   
       await db.execute(`CREATE TABLE IF NOT EXISTS floor (
         id INTEGER PRIMARY KEY,
         level INT NOT NULL UNIQUE,
         name TEXT NOT NULL,
         image BLOB NOT NULL
+      )`)
+
+      await db.execute(`CREATE TABLE IF NOT EXISTS seat_assignment (
+        participant_id INTEGER,
+        seat_id INTEGER,
+        FOREIGN KEY (participant_id)
+          REFERENCES participant (id),
+        FOREIGN KEY (seat_id)
+          REFERENCES seat (id),
+        PRIMARY KEY (participant_id, seat_id)
+      )`)
+
+      await db.execute(`CREATE TABLE IF NOT EXISTS seat (
+        id INTEGER PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        capacity INT NOT NULL,
+        floor_id INT NOT NULL,
+        lat1 REAL NOT NULL,
+        lat2 REAL NOT NULL,
+        lng1 REAL NOT NULL,
+        lng2 REAL NOT NULL,
+        FOREIGN KEY (floor_id)
+          REFERENCES floor (id)
       )`)
 
       for (let i = 0; i < schematics.length; i++) {

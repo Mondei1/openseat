@@ -1,17 +1,13 @@
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
-import { ComponentType, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Database from "tauri-plugin-sql-api";
-import { DatabaseInfoKey, getDatabaseInfo, getFloorImage, getFloors } from "@/components/database";
+import { DatabaseInfoKey, getDatabaseInfo, getFloorImage, getFloors } from "@/components/Database";
 import dynamic from "next/dynamic";
-import { Dropdown, Input, Loading, Text, Tooltip } from "@nextui-org/react";
-import { SearchIcon } from "@/components/icons/searchIcon";
-import { LayerIcon } from "@/components/icons/layerIcon";
-import { EditIcon } from "@/components/icons/editIcon";
-import { UsersIcon } from "@/components/icons/usersIcon";
-import { ArrowDownIcon } from "@/components/icons/arrowDownIcon";
-import { ArrowLeftIcon } from "@/components/icons/arrowLeftIcon";
+import { Loading, Text } from "@nextui-org/react";
+import { EditorNavbar } from "@/components/editor/Navbar";
+import { latLng } from "leaflet";
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -31,11 +27,13 @@ export default function Router() {
   const { databasePath } = router.query
 
   const [mapState, setMapState] = useState(false)
-  const Map = dynamic(() => import("../../components/Map"), { ssr: false });
+  const Map = dynamic(() => import("../../components/Map").then(res => res.Map), { ssr: false });
 
   let [mapUrl, setMapUrl] = useState("")
   let [mapHeight, setMapHeight] = useState(0)
   let [mapWidth, setMapWidth] = useState(0)
+
+  let [seatEdit, setSeatEdit] = useState(false)
 
   async function loadImage() {
     const db = await Database.load("sqlite:" + databasePath as string)
@@ -74,9 +72,23 @@ export default function Router() {
   }
 
   function back() {
+    console.log("Back!");
+
     router.push({
       pathname: "/"
     })
+  }
+
+  const editGuests = () => {
+    console.log("Guests edited");
+
+  }
+
+  function editLayer() {
+    setSeatEdit(!seatEdit)
+  }
+
+  function selectLayer() {
   }
 
   useEffect(() => {
@@ -85,37 +97,28 @@ export default function Router() {
 
   return (
     <>
-      <div className="flex controlpanel">
-        <div className="flex w-full justify-start items-center">
-          <Tooltip onClick={back} content={t("map.close_project")} placement="bottomStart">
-            <ArrowLeftIcon />
-          </Tooltip>
-        </div>
-        <div className="flex w-full gap-10 p-2 justify-center items-center">
-          <Tooltip content={t("map.select_layer")} placement="bottom">
-            <LayerIcon />
-            <Text className="ml-3">{t("map.select_layer")}</Text>
-          </Tooltip>
-          <Tooltip content={t("map.edit_layer")} placement="bottom">
-            <EditIcon />
-            <Text className="ml-3">{t("map.edit_layer")}</Text>
-          </Tooltip>
-          <Tooltip content={t("map.edit_guests")} placement="bottom">
-            <UsersIcon />
-            <Text className="ml-3">{t("map.edit_guests")}</Text>
-          </Tooltip>
-        </div>
-        <div className="flex w-full justify-end items-center">
-          <SearchIcon />
-        </div>
-      </div>
-      <div id="map">
+      <EditorNavbar
+        onBack={back}
+        onEditGuests={editGuests}
+        onEditLayer={editLayer}
+        onSelectLayer={selectLayer}
+        t={t}
+      />
+      <div className="map">
         {mapState && <>
-          <Map {...{ mapUrl, mapWidth, mapHeight }}></Map>
+          <Map
+            mapUrl={mapUrl}
+            mapHeight={mapHeight}
+            mapWidth={mapWidth}
+            enableSeatEdit={seatEdit}
+          />
+
+          {seatEdit &&
+            <Text h3 color="red" className="absolute bottom-0 left-0 p-2 z-20 map-edit-mode">Edit mode</Text>
+          }
         </>}
         {!mapState && <>
           <div className="flex w-full h-full justify-center ">
-
           </div>
           <Loading>{t("map.load")}</Loading>
         </>}

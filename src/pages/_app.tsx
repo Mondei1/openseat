@@ -5,7 +5,7 @@ import { NextUIProvider, createTheme } from '@nextui-org/react'
 import { appWithTranslation } from 'next-i18next'
 import { ThemeProvider } from 'next-themes'
 import type { AppProps } from 'next/app'
-import Transition from '@/components/transition';
+import Transition from '@/components/Transition';
 
 function App({ Component, pageProps }: AppProps) {
   // 2. Call `createTheme` and pass your custom values

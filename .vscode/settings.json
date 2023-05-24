@@ -7,5 +7,6 @@
             "database": "/opt/workspace/openseat.osdb",
             "name": "OpenSeat"
         }
-    ]
+    ],
+    "OpenCL.explorer.localizedProperties": false
 }
