@@ -1,13 +1,19 @@
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import { Key, useEffect, useState } from "react";
 import Database from "tauri-plugin-sql-api";
 import { DatabaseInfoKey, getDatabaseInfo, getFloorImage, getFloors } from "@/components/Database";
 import dynamic from "next/dynamic";
 import { Loading, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
-import { latLng } from "leaflet";
+import { EditIcon } from "@/components/icons/EditIcon";
+import Sidebar from "@/components/editor/Sidebar";
+
+interface ILayerColumn {
+  key: Key,
+  label: string
+}
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -23,6 +29,7 @@ export async function getStaticProps({ locale }) {
 
 export default function Router() {
   const { t } = useTranslation('common')
+
   const router = useRouter()
   const { databasePath } = router.query
 
@@ -34,6 +41,7 @@ export default function Router() {
   let [mapWidth, setMapWidth] = useState(0)
 
   let [seatEdit, setSeatEdit] = useState(false)
+  let [changeLayer, setChangeLayer] = useState(false)
 
   async function loadImage() {
     const db = await Database.load("sqlite:" + databasePath as string)
@@ -89,6 +97,9 @@ export default function Router() {
   }
 
   function selectLayer() {
+    console.log("Sidebar!");
+
+    setChangeLayer(!changeLayer)
   }
 
   useEffect(() => {
@@ -104,6 +115,11 @@ export default function Router() {
         onSelectLayer={selectLayer}
         t={t}
       />
+      {changeLayer &&
+        <Sidebar>
+          <Text h3>{t("map.select_layer")}</Text>
+        </Sidebar>
+      }
       <div className="map">
         {mapState && <>
           <Map
@@ -114,7 +130,10 @@ export default function Router() {
           />
 
           {seatEdit &&
-            <Text h3 color="red" className="absolute bottom-0 left-0 p-2 z-20 map-edit-mode">Edit mode</Text>
+            <div className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode">
+              <EditIcon />
+              <Text h3 className="m-0">{t("map.edit_mode")}</Text>
+            </div>
           }
         </>}
         {!mapState && <>

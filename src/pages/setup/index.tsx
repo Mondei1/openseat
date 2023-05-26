@@ -30,7 +30,7 @@ export default function Router() {
 
   interface ISchematicColumn {
     key: Key,
-    label: String
+    label: string
   }
   // Table structure
   const columns: Array<ISchematicColumn> = [

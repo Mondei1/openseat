@@ -1,9 +1,7 @@
 import Image from 'next/image'
 import { Inter } from 'next/font/google'
 import { Button, Card, Grid, Text } from '@nextui-org/react'
-import { useEffect } from 'react'
 import { open, save } from '@tauri-apps/api/dialog'
-import Database from 'tauri-plugin-sql-api'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useTranslation } from 'next-i18next'
@@ -11,9 +9,7 @@ import { serverSideTranslations } from 'next-i18next/serverSideTranslations'
 
 import { useTheme as useNextTheme } from 'next-themes'
 import { Switch, useTheme } from '@nextui-org/react'
-import { invoke } from '@tauri-apps/api'
-
-const inter = Inter({ subsets: ['latin'] })
+import { useLanguage } from '@/components/LanguageContext'
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -21,7 +17,7 @@ export async function getStaticProps({ locale }) {
     props: {
       ...(await serverSideTranslations(locale, [
         'common'
-      ])),
+      ], null, ['de'])),
       // Will be passed to the page component as props
     },
   }
@@ -29,11 +25,11 @@ export async function getStaticProps({ locale }) {
 
 export default function Home() {
   // Theme
-  const { setTheme } = useNextTheme();
-  const { isDark, type } = useTheme();
+  const { setTheme } = useNextTheme()
+  const { isDark, type } = useTheme()
 
-  const { t, i18n } = useTranslation('common');
-  const router = useRouter();
+  const { t, i18n } = useTranslation('common')
+  const router = useRouter()
 
   async function newProject() {
     let databasePath = await save({
@@ -62,6 +58,18 @@ export default function Home() {
     //console.log(invoke);
 
     //console.log("Locale: " + await invoke("get_default_locale"))
+  }
+
+  function changeLanguage() {
+    i18n.changeLanguage('de')
+    router.push({
+      pathname: router.pathname,
+      query: router.query
+    }, router.asPath, {
+      locale: 'de',
+      scroll: false,
+      shallow: true
+    })
   }
 
   async function openProject() {
@@ -172,6 +180,8 @@ export default function Home() {
           <path d="M12 1.992a10 10 0 1 0 9.236 13.838c.341 -.82 -.476 -1.644 -1.298 -1.31a6.5 6.5 0 0 1 -6.864 -10.787l.077 -.08c.551 -.63 .113 -1.653 -.758 -1.653h-.266l-.068 -.006l-.06 -.002z" strokeWidth="0" fill="currentColor"></path>
         </svg>
       </div>
+
+      <Button onPress={changeLanguage}>Click me</Button>
     </main>
   )
 }

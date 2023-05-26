@@ -1,43 +1,52 @@
-import { appWindow } from '@tauri-apps/api/window'
+import { WebviewWindow, appWindow } from '@tauri-apps/api/window'
 import { useEffect, useState } from 'react';
 import { isClient } from '@/lib/is-client.ctx';
+import { useRouter } from 'next/router';
+import clsx from 'clsx';
+import { window } from '@tauri-apps/api';
 
 export default function Titlebar() {
-  const [appWindow, setAppWindow] = useState()
+  const [appWindow, setAppWindow] = useState<WebviewWindow>()
+  const [transparent, setTransparent] = useState(false)
+
+  const router = useRouter()
 
   // Import appWindow and save it inside the state for later usage
   async function setupAppWindow() {
-    const appWindow = (await import('@tauri-apps/api/window')).appWindow
+    const appWindow: WebviewWindow = (await import('@tauri-apps/api/window')).appWindow
     // @ts-ignore
     setAppWindow(appWindow)
   }
 
   useEffect(() => {
-    console.log("Test")
+    router.events.on('routeChangeComplete', (e: string) => {
+      setTransparent(e.indexOf('/editor') !== -1)
+    })
+
     setupAppWindow()
-    maximize()
   }, [])
 
   function minimize() {
-    // @ts-ignore
-    appWindow?.minimize()
+    appWindow!.minimize()
   }
 
-  function maximize() {
-    // @ts-ignore
-    appWindow?.maximize()
+  async function maximize() {
+    if (await appWindow!.isMaximized()) {
+      appWindow!.unmaximize()
+    } else {
+      appWindow!.maximize()
+    }
   }
 
   function close() {
     console.log("Close!");
 
-    // @ts-ignore
-    appWindow?.close()
+    appWindow!.close()
   }
 
   return (
     <>
-      <div data-tauri-drag-region className="titlebar" onClick={() => { alert() }}>
+      <div data-tauri-drag-region className={clsx('titlebar', transparent ? 'titlebar-transparent' : null)}>
         <button className="titlebar-button" onClick={minimize}>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6.975 21q-.425 0-.7-.288T6 20q0-.425.288-.713T7 19h10.025q.425 0 .7.288T18 20q0 .425-.288.713T17 21H6.975Z" /></svg>
         </button>

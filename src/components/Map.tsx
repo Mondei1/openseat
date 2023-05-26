@@ -53,9 +53,8 @@ function SeatViewer() {
     </>
 }
 
+// This stores the current position in session storage. This way the map wont reset after state change.
 function PreserveLocation({ ...props }) {
-    console.log(props);
-    
     const map = useMapEvents({
         zoomend(e) {
             sessionStorage.setItem("zoom", map.getZoom().toString())

@@ -1,6 +1,5 @@
 import { Text, Tooltip } from "@nextui-org/react";
 import { ArrowLeftIcon } from "../icons/ArrowLeftIcon";
-import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { LayerIcon } from "../icons/LayerIcon";
 import { EditIcon } from "../icons/EditIcon";
 import { UsersIcon } from "../icons/UsersIcon";
@@ -18,7 +17,6 @@ export type EditorNavbarProps = {
     t: TFunction
 }
 
-// @ts-ignore
 export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEditLayer, onSelectLayer, onBack, ...props }) => {
     const { t } = useTranslation('common')
 

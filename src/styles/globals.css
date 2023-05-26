@@ -35,6 +35,11 @@ body {
   z-index: 9999;
 }
 
+.titlebar-transparent {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
 .titlebar-button {
   color: rgba(var(--foreground-rgb));
   display: inline-flex;
