@@ -9,6 +9,11 @@
     "up": "Up",
     "down": "Down",
     "delete": "Delete",
+    "settings": "Settings",
+    "settings_modal": {
+        "language": "Select language",
+        "theme": "Change color schema"
+    },
     "setup": {
         "welcome": "Setup",
         "text": "To create a new seating plan you have to answer a few questions first.",

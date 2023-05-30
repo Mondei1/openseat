@@ -32,7 +32,13 @@
       "fs": {
         "readFile": true,
         "removeFile": true,
-        "exists": true
+        "writeFile": true,
+        "exists": true,
+        "createDir": true,
+        "readDir": true
+      },
+      "path": {
+        "all": true
       }
     },
     "bundle": {

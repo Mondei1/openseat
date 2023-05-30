@@ -6,8 +6,8 @@ import { appWithTranslation } from 'next-i18next'
 import { ThemeProvider } from 'next-themes'
 import type { AppProps } from 'next/app'
 import Transition from '@/components/Transition';
-import { LanguageProvider } from '@/components/LanguageContext';
 import Titlebar from '@/components/Titlebar';
+import { SettingsProvider } from '@/components/SettingsContext';
 
 function App({ Component, pageProps }: AppProps) {
   // 2. Call `createTheme` and pass your custom values
@@ -31,9 +31,9 @@ function App({ Component, pageProps }: AppProps) {
       <Titlebar></Titlebar>
       <Transition>
         <NextUIProvider>
-          <LanguageProvider>
+          <SettingsProvider>
             <Component {...pageProps} />
-          </LanguageProvider>
+          </SettingsProvider>
         </NextUIProvider>
       </Transition>
     </ThemeProvider>

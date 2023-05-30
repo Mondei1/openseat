@@ -32,7 +32,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9999;
+  z-index: 9999999;
 }
 
 .titlebar-transparent {
@@ -53,5 +53,11 @@ body {
 }
 
 .titlebar-button:hover {
-  background-color: rgba(var(--foreground));
+  background-color: rgba(var(--background), 1) !important;
+}
+
+.button {
+  background-color: rgba(var(--foreground-rgb), 0.3);
+  padding: .1rem;
+  border-radius: 12px;
 }

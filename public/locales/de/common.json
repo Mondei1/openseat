@@ -9,6 +9,11 @@
     "up": "hoch",
     "down": "runter",
     "delete": "löschen",
+    "settings": "Einstellungen",
+    "settings_modal": {
+        "language": "Sprache auswählen",
+        "theme": "Farbschema ändern"
+    },
     "setup": {
         "welcome": "Einrichtung",
         "text": "Zuerst musst du ein paar Fragen beantworten bevor es losgehen kann.",
