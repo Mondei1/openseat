@@ -25,7 +25,7 @@ body {
 .titlebar {
   height: 30px;
   background: rgba(0, 0, 0, .5);
-  backdrop-filter: blur(30px);
+  backdrop-filter: blur(10px);
   user-select: none;
   display: flex;
   justify-content: flex-end;
@@ -33,7 +33,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  z-index: 9999999;
+  z-index: 99999;
 }
 
 .titlebar-transparent {
@@ -57,8 +57,22 @@ body {
   background-color: rgba(var(--background), 1) !important;
 }
 
+.titlebar-credit {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  z-index: 990999;
+  color: gray !important;
+  cursor: default;
+}
+
 .button {
   background-color: rgba(var(--foreground-rgb), 0.3);
   padding: .1rem;
   border-radius: 12px;
+}
+
+.author {
+  cursor: default;
+  color: gray !important;
 }

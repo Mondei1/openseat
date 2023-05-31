@@ -31,5 +31,6 @@
         "edit_guests": "Manage guests",
         "search": "Search guest",
         "edit_mode": "Edit mode"
-    }
+    },
+    "author": "developed by"
 }

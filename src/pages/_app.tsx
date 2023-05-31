@@ -9,6 +9,7 @@ import Transition from '@/components/Transition';
 import Titlebar from '@/components/Titlebar';
 import { SettingsProvider } from '@/components/SettingsContext';
 import { IsClientContextProvider } from '@/components/IsClientContext';
+import { DatabaseContextProvider } from '@/components/DatabaseContext';
 
 function App({ Component, pageProps }: AppProps) {
   // 2. Call `createTheme` and pass your custom values
@@ -34,7 +35,9 @@ function App({ Component, pageProps }: AppProps) {
         <NextUIProvider>
           <SettingsProvider>
             <IsClientContextProvider>
-              <Component {...pageProps} />
+              <DatabaseContextProvider>
+                <Component {...pageProps} />
+              </DatabaseContextProvider>
             </IsClientContextProvider>
           </SettingsProvider>
         </NextUIProvider>

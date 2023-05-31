@@ -45,12 +45,9 @@ export default function Router() {
 
   async function loadImage() {
     const db = await Database.load("sqlite:" + databasePath as string)
-    console.log("Version: ", await getDatabaseInfo(db, DatabaseInfoKey.Version))
 
     let floors = await getFloors(db);
     if (floors === null) return;
-
-    console.log(floors);
 
     if (floors.length > 0) {
       let image = await getFloorImage(db, floors[0].id);

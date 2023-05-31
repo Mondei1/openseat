@@ -39,7 +39,7 @@ export const SettingsProvider = ({ children }) => {
 
 
         invoke("save_config", { content: schema }).then((r: any) => {
-            console.log(r);
+            console.debug("Config has been saved.");
         });
 
         setConfig(schema)

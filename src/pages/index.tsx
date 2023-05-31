@@ -18,6 +18,8 @@ import { PaintIcon } from '@/components/icons/PaintIcon'
 import { SettingsContext } from '@/components/SettingsContext'
 import { useIsClient } from '@/components/IsClientContext'
 import { GithubIcon } from '@/components/icons/GithubIcon'
+import { useDatabase } from '@/components/DatabaseContext'
+import Database from 'tauri-plugin-sql-api'
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -44,6 +46,7 @@ export default function Home() {
   const router = useRouter()
 
   const settings = useContext(SettingsContext)
+  const { database, setDatabase } = useDatabase()
   const isClient = useIsClient()
 
   const [selectedLanguage, setSelectedLanguage] = useState(new Set(["en"]))
@@ -146,6 +149,15 @@ export default function Home() {
       databasePath += ".osdb"
     }
 
+    const db = await Database.load("sqlite:" + databasePath)
+    
+    if (db !== null && setDatabase !== null) {
+      console.log("Going to save db to context: ", db);
+      setDatabase(db)
+      console.log("Double checK: ", database);
+      
+    }
+
     router.push({
       pathname: "/editor",
       query: {
@@ -212,6 +224,8 @@ export default function Home() {
           </Grid>
         </Grid.Container>
       </div>
+
+      <Text className="absolute bottom-6 left-0 w-full text-center author">{t("author")} Nicolas Klier</Text>
 
       <Modal
         closeButton

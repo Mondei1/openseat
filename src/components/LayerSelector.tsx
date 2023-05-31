@@ -19,11 +19,11 @@ interface ISchematicColumn {
 }
 
 type LayerSelectorProps = {
-    schematics: ISchematicRow[],
-    setSchematics: React.Dispatch<React.SetStateAction<ISchematicRow[]>>
+    schematics: Array<ISchematicRow>,
+    setSchematics(schemas: Array<ISchematicRow>): void
 }
 
-export const LayerSelector: React.FC<LayerSelectorProps> = ({ schematics, setSchematics, ...props }) => {
+export const LayerSelector: React.FC<LayerSelectorProps> = ({ schematics, setSchematics }) => {
     const { t } = useTranslation('common')
 
     // Table structure
@@ -72,10 +72,7 @@ export const LayerSelector: React.FC<LayerSelectorProps> = ({ schematics, setSch
             path: parsedPath
         }
 
-        setSchematics((prev: any) => [
-            ...prev,
-            newFloor
-        ])
+        setSchematics(Array.prototype.concat(schematics, newFloor))
     }
 
     function moveSchematic(level: number, direction: 'UP' | 'DOWN') {
@@ -167,9 +164,9 @@ export const LayerSelector: React.FC<LayerSelectorProps> = ({ schematics, setSch
             default:
                 return cellValue;
         }
-
-        return (<>
-
-        </>)
     }
+
+    return (<>
+
+    </>)
 }

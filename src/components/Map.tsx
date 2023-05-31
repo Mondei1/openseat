@@ -45,11 +45,11 @@ function SeatViewer() {
 
     return <>
         {seats.map(x => (
-            <Rectangle bounds={x} />
+            <Rectangle key={x.getCenter().toString()} bounds={x} />
         ))}
 
         {initialPosition.lat != 0 &&
-            <Rectangle bounds={latLngBounds([initialPosition.lat, initialPosition.lng], [endPosition.lat, endPosition.lng])} />}
+            <Rectangle key={initialPosition.toString()} bounds={latLngBounds([initialPosition.lat, initialPosition.lng], [endPosition.lat, endPosition.lng])} />}
     </>
 }
 
