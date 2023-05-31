@@ -112,10 +112,6 @@ export const Map: React.FC<MapProps> = ({
                 opacity={enableSeatEdit ? 0.5 : 1}
                 url={mapUrl}>
             </ImageOverlay>
-
-            <Marker position={[0.0, 0.0]} draggable={true}>
-                <Popup>Hey ! I live here</Popup>
-            </Marker>
         </MapContainer >
     )
 }

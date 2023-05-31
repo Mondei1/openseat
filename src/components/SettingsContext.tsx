@@ -37,7 +37,6 @@ export const SettingsProvider = ({ children }) => {
         const { invoke } = window.__TAURI__.tauri
         console.log("Invoke: ", schema);
 
-
         invoke("save_config", { content: schema }).then((r: any) => {
             console.debug("Config has been saved.");
         });

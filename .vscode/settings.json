@@ -1,12 +1,14 @@
 {
-    "sqltools.useNodeRuntime": true,
-    "sqltools.connections": [
-        {
-            "previewLimit": 50,
-            "driver": "SQLite",
-            "database": "/opt/workspace/openseat.osdb",
-            "name": "OpenSeat"
-        }
-    ],
-    "OpenCL.explorer.localizedProperties": false
+  "sqltools.useNodeRuntime": true,
+  "sqltools.connections": [
+    {
+      "previewLimit": 50,
+      "driver": "SQLite",
+      "database": "/opt/workspace/openseat.osdb",
+      "name": "OpenSeat"
+    }
+  ],
+  "OpenCL.explorer.localizedProperties": false,
+  "typescript.tsdk": "node_modules\\typescript\\lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }

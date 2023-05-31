@@ -10,18 +10,10 @@ import { ArrowUpIcon } from "@/components/icons/ArrowUpIcon";
 import { ArrowDownIcon } from "@/components/icons/ArrowDownIcon";
 import Database from "tauri-plugin-sql-api";
 import { CURRENT_DATABASE_VERSION, DatabaseInfoKey } from "@/components/Database";
+import { makeStaticProps, getStaticPaths } from "@/lib/getStatic";
 
-// @ts-ignore
-export async function getStaticProps({ locale }) {
-  return {
-    props: {
-      ...(await serverSideTranslations(locale, [
-        'common'
-      ])),
-      // Will be passed to the page component as props
-    },
-  }
-}
+const getStaticProps = makeStaticProps(['common'])
+export { getStaticPaths, getStaticProps }
 
 export default function Router() {
   const { t } = useTranslation('common')
