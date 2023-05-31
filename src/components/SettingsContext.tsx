@@ -1,11 +1,14 @@
 "use client";
 
-import { Context, createContext, useContext, useEffect, useState } from "react"
+import { Context, createContext, useContext, useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next";
 
 export type UpdateConfig = (schema: Schema) => void;
+export type ReadConfig = () => void;
 export type SettingsContextProps = {
     config: Schema,
-    updateConfig: UpdateConfig
+    updateConfig: UpdateConfig,
+    readConfig: ReadConfig
 }
 
 interface Schema {
@@ -13,12 +16,14 @@ interface Schema {
     language: 'de' | 'en'
 }
 
+// @ts-ignore: I've got no idea why TS is complaining here but it works.
 export const SettingsContext: Context<SettingsContextProps> = createContext({
     config: {
         language: 'en',
         theme: 'dark'
     },
-    updateConfig: (schema) => { return }
+    updateConfig: (schema) => { return },
+    readConfig: () => { }
 })
 
 export const useLanguage = () => useContext(SettingsContext)
@@ -31,7 +36,7 @@ export const SettingsProvider = ({ children }) => {
         // @ts-ignore
         const { invoke } = window.__TAURI__.tauri
         console.log("Invoke: ", schema);
-        
+
 
         invoke("save_config", { content: schema }).then((r: any) => {
             console.log(r);
@@ -40,7 +45,7 @@ export const SettingsProvider = ({ children }) => {
         setConfig(schema)
     }
 
-    useEffect(() => {
+    const readConfig: ReadConfig = () => {
         // @ts-ignore
         const { invoke } = window.__TAURI__.tauri
 
@@ -48,7 +53,11 @@ export const SettingsProvider = ({ children }) => {
             setConfig(r)
             console.log("Got new config: ", r);
         })
+    }
+
+    useEffect(() => {
+        readConfig()
     }, [])
 
-    return <SettingsContext.Provider value={{ config, updateConfig }}>{children}</SettingsContext.Provider>
+    return <SettingsContext.Provider value={{ config, updateConfig, readConfig }}>{children}</SettingsContext.Provider>
 }

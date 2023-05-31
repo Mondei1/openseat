@@ -8,6 +8,7 @@ import type { AppProps } from 'next/app'
 import Transition from '@/components/Transition';
 import Titlebar from '@/components/Titlebar';
 import { SettingsProvider } from '@/components/SettingsContext';
+import { IsClientContextProvider } from '@/components/IsClientContext';
 
 function App({ Component, pageProps }: AppProps) {
   // 2. Call `createTheme` and pass your custom values
@@ -32,7 +33,9 @@ function App({ Component, pageProps }: AppProps) {
       <Transition>
         <NextUIProvider>
           <SettingsProvider>
-            <Component {...pageProps} />
+            <IsClientContextProvider>
+              <Component {...pageProps} />
+            </IsClientContextProvider>
           </SettingsProvider>
         </NextUIProvider>
       </Transition>

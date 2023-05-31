@@ -12,10 +12,12 @@ import { OpenIcon } from '@/components/icons/OpenIcon'
 import { SunIcon } from '@/components/icons/SunIcon'
 import { MoonIcon } from '@/components/icons/MoonIcon'
 import { SettingsIcon } from '@/components/icons/SettingsIcon'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useEffect, useMemo, useState } from 'react'
 import { LanguageIcon } from '@/components/icons/LanguageIcon'
 import { PaintIcon } from '@/components/icons/PaintIcon'
 import { SettingsContext } from '@/components/SettingsContext'
+import { useIsClient } from '@/components/IsClientContext'
+import { GithubIcon } from '@/components/icons/GithubIcon'
 
 // @ts-ignore
 export async function getStaticProps({ locale }) {
@@ -42,11 +44,47 @@ export default function Home() {
   const router = useRouter()
 
   const settings = useContext(SettingsContext)
+  const isClient = useIsClient()
+
+  const [selectedLanguage, setSelectedLanguage] = useState(new Set(["en"]))
+  const selectedValue = React.useMemo(
+    () => {
+      // This prevents this code to fail on initial startup where window is yet undefined.
+      if (!isClient) {
+        return
+      }
+
+      let lang = Array.from(selectedLanguage).join("")
+      console.log("Lang: ", lang);
+
+      let oldConfig = settings.config
+      oldConfig.language = lang as any
+      settings.updateConfig(oldConfig)
+
+      changeLanguage(lang)
+
+      switch (lang) {
+        case "de":
+          return "Deutsch"
+        case "en":
+          return "English"
+      }
+    },
+    [selectedLanguage]
+  );
+  
+  useMemo(() => {
+    if (i18n === undefined) {
+        return
+    }
+    
+    setSelectedLanguage(new Set([settings.config.language]))
+    i18n.changeLanguage(settings.config.language)
+    setTheme(settings.config.theme)
+}, [settings.config])
 
   useEffect(() => {
-    let conf = settings.config
-    changeLanguage(conf.language)
-    setTheme(conf.theme)
+    settings.readConfig()
   }, [])
 
   async function newProject() {
@@ -116,30 +154,6 @@ export default function Home() {
     })
   }
 
-  const [selectedLanguage, setSelectedLanguage] = useState("en")
-  const selectedValue = React.useMemo(
-    () => {
-      let lang = Array.from(selectedLanguage).join("")
-      console.log("Lang: ", lang);
-                
-      let oldConfig = settings.config
-      oldConfig.language = lang
-      // settings.updateConfig(oldConfig)
-
-      // changeLanguage(selectedLanguage.toString())
-      
-      switch (lang) {
-        case "de":
-          return "Deutsch"
-          break
-        case "en":
-          return "English"
-          break
-      }
-    },
-    [selectedLanguage]
-  );
-
   return (
     <main className="min-h-screen justify-center">
       <div className="main flex flex-col justify-center content-center p-24">
@@ -171,13 +185,30 @@ export default function Home() {
             </Card>
           </Grid>
           <Grid>
-            <Button
-              ghost
-              onPress={handler}
-              icon={<SettingsIcon />}
-            >{t("settings")}</Button>
+            <div className="flex gap-3">
+              <Button
+                ghost
+                auto
+                onPress={handler}
+                icon={<SettingsIcon />}
+              >
+                {t("settings")}
+              </Button>
 
-
+              <Button
+                ghost
+                auto
+                color="secondary"
+                onPress={() => {
+                  // @ts-ignore
+                  const { invoke } = window.__TAURI__.tauri
+                  invoke("open_github")
+                }}
+                icon={<GithubIcon />}
+              >
+                Github
+              </Button>
+            </div>
           </Grid>
         </Grid.Container>
       </div>
@@ -198,11 +229,12 @@ export default function Home() {
             <Text>{t("settings_modal.language")}</Text>
           </div>
           <Dropdown>
-            <Dropdown.Button flat>{ selectedValue }</Dropdown.Button>
+            <Dropdown.Button flat>{selectedValue}</Dropdown.Button>
             <Dropdown.Menu
               disallowEmptySelection
               selectionMode="single"
               selectedKeys={selectedLanguage}
+              // @ts-ignore
               onSelectionChange={setSelectedLanguage}
             >
               <Dropdown.Item key="en">English</Dropdown.Item>

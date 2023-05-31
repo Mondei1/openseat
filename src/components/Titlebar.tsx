@@ -1,15 +1,15 @@
-import { WebviewWindow, appWindow } from '@tauri-apps/api/window'
-import { useEffect, useState } from 'react';
-import { isClient } from '@/lib/is-client.ctx';
+import { WebviewWindow } from '@tauri-apps/api/window'
+import { useContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import clsx from 'clsx';
-import { window } from '@tauri-apps/api';
+import { SettingsContext } from './SettingsContext';
 
 export default function Titlebar() {
   const [appWindow, setAppWindow] = useState<WebviewWindow>()
   const [transparent, setTransparent] = useState(false)
 
   const router = useRouter()
+  const settings = useContext(SettingsContext)
 
   // Import appWindow and save it inside the state for later usage
   async function setupAppWindow() {

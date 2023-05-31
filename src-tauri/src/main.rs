@@ -20,7 +20,7 @@ static CONFIG: Lazy<Config> = Lazy::new(|| {
 fn main() {
   tauri::Builder::default()
     .plugin(tauri_plugin_sql::Builder::default().build())
-    .invoke_handler(tauri::generate_handler![get_config, save_config])
+    .invoke_handler(tauri::generate_handler![get_config, save_config, open_github])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
@@ -28,6 +28,11 @@ fn main() {
 #[tauri::command]
 fn get_default_locale() -> String {
   get_locale().unwrap_or_else(|| String::from("en"))
+}
+
+#[tauri::command]
+fn open_github() {
+  let _ = open::that("https://github.com/Mondei1/openseat");
 }
 
 #[tauri::command]

@@ -19,6 +19,7 @@
 body {
   color: rgb(var(--foreground-rgb));
   background: rgba(var(--background-rgb));
+  user-select: none;
 }
 
 .titlebar {
