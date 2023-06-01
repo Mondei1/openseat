@@ -35,7 +35,6 @@ export const SettingsProvider = ({ children }) => {
     const updateConfig: UpdateConfig = (schema: Schema) => {
         // @ts-ignore
         const { invoke } = window.__TAURI__.tauri
-        console.log("Invoke: ", schema);
 
         invoke("save_config", { content: schema }).then((r: any) => {
             console.debug("Config has been saved.");
@@ -53,10 +52,6 @@ export const SettingsProvider = ({ children }) => {
             console.log("Got new config: ", r);
         })
     }
-
-    useEffect(() => {
-        readConfig()
-    }, [])
 
     return <SettingsContext.Provider value={{ config, updateConfig, readConfig }}>{children}</SettingsContext.Provider>
 }

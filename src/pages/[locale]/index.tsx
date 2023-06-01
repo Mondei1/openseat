@@ -56,7 +56,7 @@ export default function Home() {
       oldConfig.language = lang as any
       settings.updateConfig(oldConfig)
 
-      changeLanguage(lang)
+      console.log("New config: ", oldConfig);      
 
       switch (lang) {
         case "de":
@@ -69,11 +69,13 @@ export default function Home() {
   );
 
   useMemo(() => {
+    console.log("Config language has changed. Update path.");
+    
     if (i18n === undefined && typeof window === "undefined") {
       return
     }
 
-    //i18n.changeLanguage(settings.config.language)
+    i18n.changeLanguage(settings.config.language)
     console.log("Navigate to ", settings.config.language);
     
     //getRedirect('')
@@ -82,6 +84,8 @@ export default function Home() {
   }, [settings.config])
 
   useEffect(() => {
+    console.log("Fetch new config ...");
+    
     settings.readConfig()
   }, [])
 
@@ -102,7 +106,7 @@ export default function Home() {
     }
 
     router.push({
-      pathname: "/setup",
+      pathname: getTranslatedPath("/setup", router.asPath, i18n),
       query: {
         databasePath
       }
@@ -113,7 +117,7 @@ export default function Home() {
     i18n.changeLanguage(lang)
 
     router.push({
-      pathname: "/de/",
+      pathname: "",
       query: router.query
     }, router.asPath, {
       locale: lang,
@@ -254,9 +258,9 @@ export default function Home() {
             </Dropdown.Menu>
           </Dropdown>
 
-          <Spacer y={.1} />
+          <Spacer y={.005} />
           <Divider />
-          <Spacer y={.1} />
+          <Spacer y={.3} />
 
           <div className="flex gap-2">
             <PaintIcon />
@@ -272,6 +276,8 @@ export default function Home() {
 
             <MoonIcon height={36} width={36} />
           </div>
+
+          <Spacer y={0.1} />
         </Modal.Body>
       </Modal>
     </main>

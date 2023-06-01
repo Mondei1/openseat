@@ -21,7 +21,7 @@ export default function Titlebar() {
 
   useEffect(() => {
     router.events.on('routeChangeComplete', (e: string) => {
-      setTransparent(e.indexOf('/editor') !== -1)
+      setTransparent(e.indexOf('editor') !== -1)
     })
 
     setupAppWindow()

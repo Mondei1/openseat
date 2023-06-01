@@ -7,14 +7,10 @@ export const getTranslatedPath = (path: string, currentPath: string, lang: I18n)
     if (path.startsWith('/' + lang) && currentPath === '/404') { // prevent endless loop
         return '/' + lang + currentPath
     }
-    return '/' + lang.language + '/' + path
+    return '/' + lang.language + path
 }
 
 export const useRedirect = (to: string | null) => {
-    console.log("Test");
-    
-    console.trace()
-
     const router = useRouter()
     const settings = useContext(SettingsContext)
 

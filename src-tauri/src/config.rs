@@ -61,7 +61,7 @@ impl Config {
     }
 
     pub fn write(&self, content: &Content) -> Result<(), io::Error> {
-        let formatted_config = match serde_json::to_string(content) {
+        let formatted_config = match serde_json::to_string_pretty(content) {
             Ok(fc) => fc,
             Err(err) => {
                 println!("Cannot deserialize config: {}", err);
