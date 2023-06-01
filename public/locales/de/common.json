@@ -29,6 +29,7 @@
         "select_layer": "Stockwerk wechseln",
         "edit_layer": "Sitze bearbeiten",
         "edit_guests": "Gäste verwalten",
+        "new_guest": "neuer Gast",
         "search": "Gast suchen",
         "edit_mode": "Editiermodus"
     },

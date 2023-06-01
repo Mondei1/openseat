@@ -29,6 +29,7 @@
         "select_layer": "Change layer",
         "edit_layer": "Edit seats",
         "edit_guests": "Manage guests",
+        "new_guest": "New guest",
         "search": "Search guest",
         "edit_mode": "Edit mode"
     },

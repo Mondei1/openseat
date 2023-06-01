@@ -51,5 +51,5 @@
     border-radius: 12px;
     z-index: 30;
 
-    overflow: scroll;
+    overflow-y: auto;
 }

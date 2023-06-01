@@ -4,11 +4,13 @@ import { Key, useEffect, useMemo, useState } from "react";
 import Database from "tauri-plugin-sql-api";
 import { getFloorImage, getFloors } from "@/components/Database";
 import dynamic from "next/dynamic";
-import { Loading, Text } from "@nextui-org/react";
+import { Button, Input, Loading, Spacer, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
 import { EditIcon } from "@/components/icons/EditIcon";
 import Sidebar from "@/components/editor/Sidebar";
 import { makeStaticProps, getStaticPaths } from "@/lib/getStatic";
+import { SearchIcon } from "@/components/icons/SearchIcon";
+import { AddImageIcon } from "@/components/icons/AddImageIcon";
 
 interface ILayerColumn {
   key: Key,
@@ -32,6 +34,7 @@ export default function Router() {
   let [mapWidth, setMapWidth] = useState(0)
 
   let [seatEdit, setSeatEdit] = useState(false)
+  let [guestEdit, setGuestEdit] = useState(false)
   let [layerId, setLayerId] = useState(0)
 
   let [database, setDatabase] = useState<Database | null>(null)
@@ -82,8 +85,7 @@ export default function Router() {
   }
 
   const editGuests = () => {
-    console.log("Guests edited");
-
+    setGuestEdit(!guestEdit)
   }
 
   function editLayer() {
@@ -99,6 +101,8 @@ export default function Router() {
       setLayerId(1)
     })
   }, [])
+
+  const [hover, setHover] = useState(false)
 
   return (
     <>
@@ -123,6 +127,31 @@ export default function Router() {
             mapWidth={mapWidth}
             enableSeatEdit={seatEdit}
           />
+
+          {guestEdit &&
+            <Sidebar key={"TEst"}>
+              <div className="flex gap-4">
+                <Input
+                  contentLeft={<SearchIcon />}
+                  bordered
+                  width="100%"
+                  css={{ backgroundColor: "rgba(var(--background-rgb), 0.3)" }}
+                  placeholder={t("map.search")}
+                />
+                <Button
+                  bordered
+                  color={"gradient"}
+                  icon={<AddImageIcon />}
+                  shadow={hover}
+                  onMouseOver={() => { setHover(true) }}
+                  onMouseLeave={() => { setHover(false) }}
+                  auto
+                >
+                  {t("map.new_guest")}
+                </Button>
+              </div>
+            </Sidebar>
+          }
 
           {seatEdit &&
             <div className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode">
