@@ -5,7 +5,7 @@
     width: 100vw;
     height: fit-content;
     background-color: rgba(var(--background-rgb), 0.9);
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(20px);
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
     padding: 0.8rem;
@@ -31,6 +31,11 @@
     border-top-right-radius: 12px;
     background-color: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);
+}
+
+.map-marker {
+    color: black;
+    text-shadow: 0px 0px 10px rgb(0, 0, 0);
 }
 
 @keyframes edit-begin {

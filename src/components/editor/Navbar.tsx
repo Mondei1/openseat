@@ -46,10 +46,10 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
         const id = Number.parseInt(Array.from(selection).join(""))
         if (id == MAGICAL_SETTINGS_ID) {
             setSettings(true)
-            
+
             return
         }
-        
+
         setSelected(new Set([id]))
     }
 
@@ -111,7 +111,7 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
                 </Tooltip>
             </div>
             <div className="flex w-full gap-10 p-1 justify-center items-center">
-                <Tooltip content={t("map.select_layer")} placement="bottom">
+                <Tooltip content={t("map.select_layer")} isDisabled={editActive} placement="bottom">
                     <Dropdown isDisabled={editActive}>
                         <Dropdown.Button disabled={editActive} light css={{ padding: "0" }}>
                             <LayerIcon />
@@ -127,7 +127,7 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
                             items={floors}
                         >
                             {(item => (
-                                renderDropdownItem(item as  IFloor)
+                                renderDropdownItem(item as IFloor)
                             ))}
                         </Dropdown.Menu>
                     </Dropdown>
@@ -160,9 +160,17 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
                         <Text color={editActive ? "primary" : "white"} className="ml-3">{t("map.edit_layer")}</Text>
                     </Button>
                 </Tooltip>
-                <Tooltip onClick={onEditGuests} content={t("map.edit_guests")} placement="bottom">
-                    <UsersIcon />
-                    <Text className="ml-3">{t("map.edit_guests")}</Text>
+                <Tooltip isDisabled={editActive} content={t("map.edit_guests")} placement="bottom">
+                    <Button
+                        light
+                        auto
+                        css={{ padding: "0" }}
+                        icon={<UsersIcon />}
+                        onPress={() => { if (!editActive) onEditGuests() }}
+                        disabled={editActive}
+                    >
+                        <Text className="ml-3" color={editActive ? "gray" : ""}>{t("map.edit_guests")}</Text>
+                    </Button>
                 </Tooltip>
             </div>
             <div className="flex w-full justify-end items-center">

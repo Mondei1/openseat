@@ -9,7 +9,7 @@ import { DeleteIcon } from "@/components/icons/DeleteIcon";
 import { ArrowUpIcon } from "@/components/icons/ArrowUpIcon";
 import { ArrowDownIcon } from "@/components/icons/ArrowDownIcon";
 import Database from "tauri-plugin-sql-api";
-import { CURRENT_DATABASE_VERSION, DatabaseInfoKey, IFloor } from "@/components/Database";
+import { CURRENT_DATABASE_VERSION, DatabaseInfoKey, IFloor, initDatabase } from "@/components/Database";
 import { makeStaticProps, getStaticPaths } from "@/lib/getStatic";
 import { LayerManager } from "@/components/LayerManager";
 
@@ -42,79 +42,7 @@ export default function Router() {
 
     const db = await Database.load("sqlite:" + databasePath)
 
-    // Create table storing the current schema version allowing for future migrations. 
-    await db.execute("BEGIN TRANSACTION;")
-
-    try {
-      await db.execute("CREATE TABLE IF NOT EXISTS info (`key` INTEGER NOT NULL PRIMARY KEY, `data` TEXT NOT NULL);")
-      await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Version, CURRENT_DATABASE_VERSION])
-      await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Name, databaseName])
-
-      await db.execute(`CREATE TABLE IF NOT EXISTS participant (
-        id INTEGER PRIMARY KEY,
-        first_name VARCHAR(255) NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        guest_amount VARCHAR(255) NOT NULL,
-        guests_checkedin VARCHAR(255) NOT NULL
-      );`)
-
-      /*await db.execute(`CREATE TABLE IF NOT EXISTS guest (
-        id INTEGER PRIMARY KEY,
-        participant_id INT NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        first_name VARCHAR(255) NOT NULL,
-        FOREIGN KEY (participant_id)
-          REFERENCES participant (id)
-      );`)*/
-
-      await db.execute(`CREATE TABLE IF NOT EXISTS floor (
-        id INTEGER PRIMARY KEY,
-        level INT NOT NULL UNIQUE,
-        name TEXT NOT NULL,
-        image BLOB NOT NULL
-      )`)
-
-      await db.execute(`CREATE TABLE IF NOT EXISTS seat_assignment (
-        participant_id INTEGER,
-        seat_id INTEGER,
-        FOREIGN KEY (participant_id)
-          REFERENCES participant (id),
-        FOREIGN KEY (seat_id)
-          REFERENCES seat (id),
-        PRIMARY KEY (participant_id, seat_id)
-      )`)
-
-      await db.execute(`CREATE TABLE IF NOT EXISTS seat (
-        id INTEGER PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        capacity INT NOT NULL,
-        floor_id INT NOT NULL,
-        lat1 REAL NOT NULL,
-        lat2 REAL NOT NULL,
-        lng1 REAL NOT NULL,
-        lng2 REAL NOT NULL,
-        FOREIGN KEY (floor_id)
-          REFERENCES floor (id)
-      )`)
-
-      for (let i = 0; i < schematics.length; i++) {
-        const schematic = schematics[i]
-
-        try {
-          let floorId = (await db.execute(`INSERT INTO floor (level, name, image) VALUES ($1, $2, $3)`, [schematic.level, schematic.name, schematic.image])).lastInsertId
-          console.debug("Inserted ID: " + floorId);
-        } catch (err) {
-          console.error("Failed to read image from disk:", err);
-          console.error(`Skip import of floor ${schematic.name}`);
-
-        }
-      }
-
-      await db.execute("COMMIT;")
-    } catch (err) {
-      await db.execute("ROLLBACK;")
-      console.error("SQLite failed with the following error and all changes were undone:", err);
-    }
+    initDatabase(db, databaseName, schematics)
 
     db.close()
     router.push({
