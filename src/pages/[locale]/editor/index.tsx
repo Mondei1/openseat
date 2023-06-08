@@ -85,8 +85,9 @@ export default function Router() {
 
   async function addNewSeat(bounds: LatLngBounds) {
     if (database === null) return
-
     let amount = await getHighestSeatId(database!)
+    
+    console.log("Amount ", amount);
     
     if (amount === null) return;
 

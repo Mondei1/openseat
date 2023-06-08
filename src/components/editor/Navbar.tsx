@@ -172,7 +172,6 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
                 </Tooltip>
             </div>
             <div className="flex w-full justify-end items-center">
-                <SearchIcon />
             </div>
         </div>
     )

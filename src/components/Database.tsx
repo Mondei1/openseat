@@ -196,10 +196,10 @@ export async function deleteSeat(db: Database, seatId: number): Promise<boolean>
     }
 }
 
-export async function getHighestSeatId(db: Database): Promise<number | null> {
+export async function getHighestSeatId(db: Database): Promise<number> {
     try {
         // @ts-ignore
-        return (await db.select("SELECT MAX(id) AS max FROM seat"))[0].max
+        return (await db.select("SELECT MAX(id) AS max FROM seat"))[0].max || 0
     } catch (err) {
         console.error("Couldn't count seats: ", err)
 
