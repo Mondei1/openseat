@@ -96,8 +96,6 @@ export const LayerManager: React.FC<LayerSelectorProps> = ({ schematics, setSche
     }
 
     const renderCell = (schematic: IFloor, columnKey: React.Key) => {
-        console.log("Render cell: ", schematic);
-
         if (schematic.level === -1) {
             return
         }

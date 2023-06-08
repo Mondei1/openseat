@@ -80,8 +80,6 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
             console.log("Couldn't fetch floors since database is null.")
         }
 
-        console.log(floors);
-
     }, [db])
 
     function editClicked() {

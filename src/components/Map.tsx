@@ -1,44 +1,57 @@
 import styles from './Map.module.css';
 import L from "leaflet";
-import { ImageOverlay, MapContainer, Marker, Rectangle, useMapEvents } from "react-leaflet";
+import { ImageOverlay, MapContainer, Marker, Rectangle, SVGOverlay, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
 import { CRS, LatLng, latLng, latLngBounds, LatLngBounds } from 'leaflet';
-import { Dispatch, SetStateAction, useState } from 'react';
-import { ISeat, deleteSeat } from './Database';
+import { useState } from 'react';
+import { ISeat } from './Database';
 import { Dropdown } from '@nextui-org/react';
 import { DeleteIcon } from './icons/DeleteIcon';
+import { TFunction } from 'next-i18next';
 
 interface IMapSeat extends ISeat {
     bounds?: LatLngBounds,
-    divIcon?: L.DivIcon
+    divIcon?: L.DivIcon,
+    textPosition?: LatLng
 }
 
 export type MapProps = {
+    t: TFunction,
     mapUrl: string,
     mapWidth: number,
     mapHeight: number,
     enableSeatEdit?: boolean,
     seats: ISeat[],
-    addNewSeat: (seat: LatLngBounds) => Promise<void>
+    addNewSeat: (seat: LatLngBounds) => Promise<void>,
+    removeSeat: (seatId: number) => void
 }
 
 type SeatViewerProps = {
     seats: ISeat[],
-    addNewSeat: (seat: LatLngBounds) => Promise<void>
+    addNewSeat: (seat: LatLngBounds) => Promise<void>,
+    enableSeatEdit: boolean,
+    removeSeat: (seatId: number) => void
 }
 
 type SeatDropdownProps = {
+    t: TFunction,
     seats: ISeat[],
-    enableSeatEdit: boolean
+    enableSeatEdit: boolean,
+    removeSeat: (seatId: number) => void
 }
 
-const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat }) => {
+const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, removeSeat, enableSeatEdit }) => {
     const [initialPosition, setInitialPosition] = useState(latLng(0, 0))
     const [endPosition, setEndPosition] = useState(latLng(0, 0))
+
     const map = useMapEvents({
         mousedown(e) {
+            if (!enableSeatEdit) {
+                return
+            }
+
             if (e.originalEvent.button === 2) {
                 return
             }
@@ -53,6 +66,10 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat }) => {
             }
         },
         mouseup(e) {
+            if (!enableSeatEdit) {
+                return
+            }
+
             if (e.originalEvent.button === 2) {
                 return
             }
@@ -70,14 +87,19 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat }) => {
     let mapSeats: IMapSeat[] = seats
     mapSeats.map(x => {
         x.bounds = latLngBounds([x.lat1, x.lng1], [x.lat2, x.lng2])
-        x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker" })
+        x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker", iconSize: L.point(128, 32) })
+
+        let textPosition = x.bounds.getCenter().clone()
+        textPosition.lng -= 0
+
+        x.textPosition = textPosition
     })
 
     return <>
         {mapSeats.map(x => (
             <>
-                <Rectangle key={x.id.toString()} bounds={x.bounds!}>
-                    <Marker position={x.bounds!.getCenter()} title='Test' icon={x.divIcon} />
+                <Rectangle key={x.id.toString()} bounds={x.bounds!} fillOpacity={0.6}>
+                    <Marker position={x.textPosition!} icon={x.divIcon} />
                 </Rectangle>
             </>
         ))}
@@ -102,7 +124,30 @@ function PreserveLocation({ ...props }) {
     return (<></>)
 }
 
-const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, enableSeatEdit, ...props }) => {
+function convertToMapSeat(seats: ISeat[]): IMapSeat[] {
+    let mapSeats: IMapSeat[] = seats
+    mapSeats.map(x => {
+        x.bounds = latLngBounds([x.lat1, x.lng1], [x.lat2, x.lng2])
+        x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker" })
+    })
+
+    return mapSeats
+}
+
+function getSeatAt(map: L.Map, mapSeats: IMapSeat[], point: L.Point) {
+    // Figure out which rectangle was right clicked
+    for (let i = 0; i < mapSeats.length; i++) {
+        let seat = mapSeats[i]
+
+        if (seat.bounds?.contains(map.containerPointToLatLng(point))) {
+            return seat
+        }
+    }
+
+    return null
+}
+
+const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, enableSeatEdit, removeSeat, t, ...props }) => {
     let [showContextMenu, setShowContextMenu] = useState(false)
     let [contextMenuCoords, setContextMenuCoords] = useState<number[]>([])
     let [targetSeat, setTargetSeat] = useState<IMapSeat | null>()
@@ -114,27 +159,15 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, enableSeatEdit, ...p
             }
         },
         contextmenu(e) {
-            console.log("Open context menu at: ", e.containerPoint)
-
             if (!enableSeatEdit) {
                 return
             }
 
-            let mapSeats: IMapSeat[] = seats
-            mapSeats.map(x => {
-                x.bounds = latLngBounds([x.lat1, x.lng1], [x.lat2, x.lng2])
-                x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker" })
-            })
-            
-            // Figure out which rectangle was right clicked
-            for (let i = 0; i < mapSeats.length; i++) {
-                let seat = mapSeats[i]
+            console.log("Open context menu at: ", e.containerPoint)
 
-                if (seat.bounds?.contains(map.containerPointToLatLng(e.containerPoint))) {
-                    setTargetSeat(seat)                    
-                }
-            }
-
+            const mapSeats = convertToMapSeat(seats)
+            setTargetSeat(getSeatAt(map, mapSeats, e.containerPoint))
+        
             // No seat found. Ignore.
             if (targetSeat === null) {
                 return
@@ -154,14 +187,13 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, enableSeatEdit, ...p
                 variant="light"
                 aria-label="Actions"
                 disabledKeys={["name"]}
-                onSelectionChange={(key) => {
+                onAction={(key) => {
                     if (key.toString() == "delete") {
-                        
+                        removeSeat(targetSeat?.id!)
                     }
                 }}
             >
-                <Dropdown.Item key="name" withDivider>{targetSeat?.name}</Dropdown.Item>
-                <Dropdown.Item key="delete" color="error" withDivider>
+                <Dropdown.Item key="delete" color="error" command={t("keys.del")!} icon={<DeleteIcon />}>
                     Löschen
                 </Dropdown.Item>
             </Dropdown.Menu>
@@ -176,6 +208,8 @@ export const Map: React.FC<MapProps> = ({
     enableSeatEdit,
     seats,
     addNewSeat: setSeats,
+    removeSeat,
+    t,
     ...props
 }) => {
     mapWidth *= 0.7
@@ -209,9 +243,9 @@ export const Map: React.FC<MapProps> = ({
         >
 
             <PreserveLocation />
-            <SeatDropdown seats={seats} enableSeatEdit={enableSeatEdit!} />
+            <SeatDropdown t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
 
-            {(enableSeatEdit || false) && <SeatViewer seats={seats} addNewSeat={setSeats} />}
+            <SeatViewer seats={seats} addNewSeat={setSeats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} mapUrl={mapUrl} />
 
             <ImageOverlay
                 bounds={[[0.0, mapWidth], [mapHeight, 0.0]]}

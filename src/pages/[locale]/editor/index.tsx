@@ -2,9 +2,9 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Key, useEffect, useMemo, useState } from "react";
 import Database from "tauri-plugin-sql-api";
-import { ISeat, addSeat, getFloorImage, getFloors, getSeatAmount, getSeats } from "@/components/Database";
+import { ISeat, addSeat, getFloorImage, getFloors, getHighestSeatId, getSeats } from "@/components/Database";
 import dynamic from "next/dynamic";
-import { Button, Input, Loading, Text } from "@nextui-org/react";
+import { Button, Divider, Input, Loading, Spacer, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
 import { EditIcon } from "@/components/icons/EditIcon";
 import Sidebar from "@/components/editor/Sidebar";
@@ -12,6 +12,7 @@ import { makeStaticProps, getStaticPaths } from "@/lib/getStatic";
 import { SearchIcon } from "@/components/icons/SearchIcon";
 import { UserAddIcon } from "@/components/icons/UserAddIcon";
 import { latLngBounds, LatLngBounds } from 'leaflet';
+import { deleteSeat } from "@/components/Database";
 
 interface ILayerColumn {
   key: Key,
@@ -39,6 +40,8 @@ export default function Router() {
   let [guestEdit, setGuestEdit] = useState(false)
   let [layerId, setLayerId] = useState(1)
 
+  let [defaultCapacity, setDefaultCapacity] = useState(6)
+
   let [database, setDatabase] = useState<Database | null>(null)
 
   async function loadDatabase() {
@@ -64,7 +67,7 @@ export default function Router() {
         image.src = reader.result?.toString()!!
         console.log("Load image ...");
 
-        image.onload = () => {
+        image.onload = async () => {
           console.log("Width: ", image.width, " Height: ", image.height);
 
           setMapUrl(image.src)
@@ -73,6 +76,8 @@ export default function Router() {
 
           //console.log("Loaded image as Base64", mapUrl)
           setMapState(true)
+
+          setSeats((await getSeats(database!, layerId))!)
         }
       }
     }
@@ -81,15 +86,14 @@ export default function Router() {
   async function addNewSeat(bounds: LatLngBounds) {
     if (database === null) return
 
-    let amount = await getSeatAmount(database!)
-    console.log("Amount: ", amount);
+    let amount = await getHighestSeatId(database!)
     
     if (amount === null) return;
 
     let seat: ISeat = {
       id: amount + 1,
       name: (amount + 1).toString(),
-      capacity: 12,
+      capacity: defaultCapacity,
       floor_id: layerId,
       lat1: bounds.getNorthWest().lat,
       lng1: bounds.getNorthWest().lng,
@@ -97,7 +101,20 @@ export default function Router() {
       lng2: bounds.getSouthEast().lng,
     }
 
+    // Prevent creation of accidental rectangles
+    let A = Math.abs((seat.lat2 - seat.lat1) * (seat.lng2 - seat.lng1))
+    if (A < 512) {
+      return
+    }
+
     addSeat(database, seat)
+    setSeats((await getSeats(database!, layerId))!)
+  }
+
+  async function removeSeat(seatId: number) {
+    if (database === null) return
+
+    deleteSeat(database, seatId)
     setSeats((await getSeats(database!, layerId))!)
   }
 
@@ -153,12 +170,14 @@ export default function Router() {
       <div className="map">
         {mapState && <>
           <Map
+            t={t}
             mapUrl={mapUrl}
             mapHeight={mapHeight}
             mapWidth={mapWidth}
             enableSeatEdit={seatEdit}
             seats={seats}
             addNewSeat={addNewSeat}
+            removeSeat={removeSeat}
           />
 
           {guestEdit &&
@@ -190,6 +209,14 @@ export default function Router() {
             <div className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode">
               <EditIcon />
               <Text h3 className="m-0">{t("map.edit_mode")}</Text>
+              <Spacer x={.5} />
+              <Input
+                value={defaultCapacity}
+                onChange={e => setDefaultCapacity(Number.parseInt(e.target.value))}
+                width="9rem"
+                label={t("map.default_seat_capacity")!}
+                type="number"
+              />
             </div>
           </>
           }

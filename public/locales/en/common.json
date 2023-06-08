@@ -31,7 +31,12 @@
         "edit_guests": "Manage guests",
         "new_guest": "New guest",
         "search": "Search guest",
-        "edit_mode": "Edit mode"
+        "edit_mode": "Edit mode",
+        "default_seat_capacity": "Default capacity",
+        "seat": "Seat"
+    },
+    "keys": {
+        "del": "Del"
     },
     "author": "developed by"
 }

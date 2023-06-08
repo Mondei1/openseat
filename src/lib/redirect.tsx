@@ -24,7 +24,6 @@ export const useRedirect = (to: string | null) => {
         router.replace('/' + detectedLng + router.route)
         return
     }
-    console.log(router);
 
     router.replace('/' + detectedLng + to)
     })

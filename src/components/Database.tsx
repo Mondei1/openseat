@@ -176,8 +176,6 @@ export async function addSeat(db: Database, seat: ISeat): Promise<boolean> {
         await db.execute("INSERT INTO seat (name, capacity, floor_id, lat1, lat2, lng1, lng2) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             [seat.name, seat.capacity, seat.floor_id, seat.lat1, seat.lat2, seat.lng1, seat.lng2])
         
-        console.log("Added new seat to db: ", seat);
-        
         return true
     } catch (err) {
         console.error("Failed to insert new seat: ", err)
@@ -198,12 +196,10 @@ export async function deleteSeat(db: Database, seatId: number): Promise<boolean>
     }
 }
 
-export async function getSeatAmount(db: Database): Promise<number | null> {
-    console.log("Actual result: ", await db.select("SELECT count(*) AS amount FROM seat"));
-    
+export async function getHighestSeatId(db: Database): Promise<number | null> {
     try {
         // @ts-ignore
-        return (await db.select("SELECT count(*) AS amount FROM seat"))[0].amount
+        return (await db.select("SELECT MAX(id) AS max FROM seat"))[0].max
     } catch (err) {
         console.error("Couldn't count seats: ", err)
 

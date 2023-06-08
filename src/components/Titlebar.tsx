@@ -40,8 +40,6 @@ export default function Titlebar() {
   }
 
   function close() {
-    console.log("Close!");
-
     appWindow!.close()
   }
 

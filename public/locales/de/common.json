@@ -31,7 +31,12 @@
         "edit_guests": "Gäste verwalten",
         "new_guest": "neuer Gast",
         "search": "Gast suchen",
-        "edit_mode": "Editiermodus"
+        "edit_mode": "Editiermodus",
+        "default_seat_capacity": "Standard Sitzplätze",
+        "seat": "Sitz"
+    },
+    "keys": {
+        "del": "Entf"
     },
     "author": "entwickelt von"
 }

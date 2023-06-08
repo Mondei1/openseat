@@ -84,8 +84,6 @@ export default function Home() {
   }, [settings.config])
 
   useEffect(() => {
-    console.log("Fetch new config ...");
-    
     settings.readConfig()
   }, [])
 

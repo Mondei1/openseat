@@ -1,6 +1,7 @@
 import { Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip } from "@nextui-org/react"
 import React, { Key, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { IFloor } from "../Database"
 
 interface ISchematicRow {
     level: number,
