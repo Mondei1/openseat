@@ -2,7 +2,7 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Key, useEffect, useMemo, useState } from "react";
 import Database from "tauri-plugin-sql-api";
-import { ISeat, addSeat, getFloorImage, getFloors, getHighestSeatId, getSeats } from "@/components/Database";
+import { IGuest, ISeat, addGuest, addSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeats } from "@/components/Database";
 import dynamic from "next/dynamic";
 import { Button, Divider, Input, Loading, Spacer, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
@@ -13,6 +13,7 @@ import { SearchIcon } from "@/components/icons/SearchIcon";
 import { UserAddIcon } from "@/components/icons/UserAddIcon";
 import { latLngBounds, LatLngBounds } from 'leaflet';
 import { deleteSeat } from "@/components/Database";
+import { GuestTable } from "@/components/editor/GuestTable";
 
 interface ILayerColumn {
   key: Key,
@@ -36,6 +37,8 @@ export default function Router() {
   let [mapWidth, setMapWidth] = useState(0)
 
   let [seats, setSeats] = useState<ISeat[]>([])
+  let [guests, setGuests] = useState<IGuest[]>([])
+
   let [seatEdit, setSeatEdit] = useState(false)
   let [guestEdit, setGuestEdit] = useState(false)
   let [layerId, setLayerId] = useState(1)
@@ -87,8 +90,6 @@ export default function Router() {
     if (database === null) return
     let amount = await getHighestSeatId(database!)
     
-    console.log("Amount ", amount);
-    
     if (amount === null) return;
 
     let seat: ISeat = {
@@ -109,7 +110,7 @@ export default function Router() {
     }
 
     addSeat(database, seat)
-    setSeats((await getSeats(database!, layerId))!)
+    setSeats((await getSeats(database, layerId))!)
   }
 
   async function removeSeat(seatId: number) {
@@ -117,6 +118,20 @@ export default function Router() {
 
     deleteSeat(database, seatId)
     setSeats((await getSeats(database!, layerId))!)
+  }
+
+  async function addNewGuest(guest: IGuest) {
+    if (database === null) return
+
+    addGuest(database, guest)
+    setGuests(await getGuests(database))
+  }
+
+  async function removeGuest(guestId: number) {
+    if (database === null) return
+
+    deleteGuest(database, guestId)
+    setGuests((await getGuests(database))!)
   }
 
   function back() {
@@ -203,6 +218,10 @@ export default function Router() {
                   {t("map.new_guest")}
                 </Button>
               </div>
+
+              <Spacer y={1} />
+
+              <GuestTable guests={guests} deleteGuest={removeGuest} newGuest={addNewGuest} />
             </Sidebar>
           }
 

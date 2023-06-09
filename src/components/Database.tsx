@@ -9,9 +9,11 @@ export enum DatabaseInfoKey {
 
 export interface IGuest {
     id: number,
-    participantId: number,
-    firstName: number,
-    lastName: number
+    firstName: string,
+    lastName: string,
+    additionalGuestAmount: number,
+    additionalGuestCheckedin: number,
+    checkedIn: boolean
 }
 
 export interface IFloor {
@@ -45,8 +47,9 @@ export async function initDatabase(db: Database, databaseName: string, schematic
         id INTEGER PRIMARY KEY,
         first_name VARCHAR(255) NOT NULL,
         last_name VARCHAR(255) NOT NULL,
-        guest_amount VARCHAR(255) NOT NULL,
-        guests_checkedin VARCHAR(255) NOT NULL
+        guests_amount INTEGER NOT NULL,
+        guests_checkedin INTEGER NOT NULL,
+        checkedin BOOLEAN NOT NULL DEFAULT false
       );`)
 
       /*await db.execute(`CREATE TABLE IF NOT EXISTS guest (
@@ -190,7 +193,7 @@ export async function deleteSeat(db: Database, seatId: number): Promise<boolean>
 
         return true
     } catch (err) {
-        console.error(`Deletion of ${seatId} failed: ${err}`)
+        console.error(`Deletion of seat ${seatId} failed: ${err}`)
 
         return false
     }
@@ -203,6 +206,41 @@ export async function getHighestSeatId(db: Database): Promise<number> {
     } catch (err) {
         console.error("Couldn't count seats: ", err)
 
-        return null
+        return 0
+    }
+}
+
+export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
+    try {
+        await db.execute("INSERT INTO guest (first_name, last_name, guests_amount, guests_checkedin, checkedin) VALUES ($1, $2, $3, $4, $5)",
+            [guest.firstName, guest.lastName, guest.additionalGuestAmount, guest.additionalGuestCheckedin, guest.checkedIn])
+
+        return true
+    } catch (err) {
+        console.error("Failed to insert new guest: ", err)
+        
+        return false
+    }
+}
+
+export async function getGuests(db: Database): Promise<Array<IGuest>> {
+    try {
+        return (await db.select("SELECT * FROM participant")) || []
+    } catch (err) {
+        console.error("Couldn't get guests: ", err)
+
+        return []
+    }
+}
+
+export async function deleteGuest(db: Database, guestId: number): Promise<boolean> {
+    try {
+        await db.execute("DELETE FROM participant WHERE id = $1", [guestId])
+
+        return true
+    } catch (err) {
+        console.error(`Deletion of guest ${guestId} failed: ${err}`)
+
+        return false
     }
 }

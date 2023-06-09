@@ -193,7 +193,7 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, enableSeatEdit, remo
                     }
                 }}
             >
-                <Dropdown.Item key="delete" color="error" command={t("keys.del")!} icon={<DeleteIcon />}>
+                <Dropdown.Item key="delete" color="error" icon={<DeleteIcon />}>
                     Löschen
                 </Dropdown.Item>
             </Dropdown.Menu>
