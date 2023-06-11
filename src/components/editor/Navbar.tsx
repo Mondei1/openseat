@@ -3,7 +3,6 @@ import { ArrowLeftIcon } from "../icons/ArrowLeftIcon";
 import { LayerIcon } from "../icons/LayerIcon";
 import { EditIcon } from "../icons/EditIcon";
 import { UsersIcon } from "../icons/UsersIcon";
-import { SearchIcon } from "../icons/SearchIcon";
 import { useTranslation } from "react-i18next";
 import { TFunction } from "next-i18next";
 import { IFloor, getFloors } from "../Database";
@@ -59,8 +58,6 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
         if (db !== null) {
             getFloors(db).then(f => {
                 if (f !== null) {
-                    console.log("Fetched floors: ", f)
-
                     // Fake floor that acts as settings.
                     let settingsFloor: IFloor = {
                         id: MAGICAL_SETTINGS_ID,

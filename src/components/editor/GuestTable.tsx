@@ -1,10 +1,11 @@
-import { Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip, User } from "@nextui-org/react"
-import React, { Key, useState } from "react"
+import { Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip, User, useAsyncList } from "@nextui-org/react"
+import React, { Key, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { IFloor, IGuest } from "../Database"
+import { IFloor, IGuest, getGuestPage, getGuests } from "../Database"
 import { IconButton } from "../IconButton"
 import { DeleteIcon } from "../icons/DeleteIcon"
 import { EditIcon } from "../icons/EditIcon"
+import Database from "tauri-plugin-sql-api"
 
 interface ISchematicColumn {
     key: Key,
@@ -12,13 +13,33 @@ interface ISchematicColumn {
 }
 
 type GuestTableProps = {
-    guests: Array<IGuest>,
+    //guests: Array<IGuest>,
+    db: Database,
     deleteGuest: (guestId: number) => void,
     newGuest: (guest: IGuest) => void
 }
 
-export const GuestTable: React.FC<GuestTableProps> = ({ guests, deleteGuest, newGuest }) => {
+export const GuestTable: React.FC<GuestTableProps> = ({ db, deleteGuest, newGuest }) => {
     const { t } = useTranslation('common')
+
+    const [guests, setGuests] = useState<IGuest[]>([])
+
+    useEffect(() => {
+        getGuests(db).then(g => {
+            setGuests(g)
+        })
+    }, [])
+
+    // @ts-ignore
+    async function load({ signal, cursor }) {
+        return {
+            items: await getGuestPage(db, cursor || 0, 3),
+            cursor: (cursor || 0) + 3
+        }
+    }
+
+    // @ts-ignore
+    const list = useAsyncList({ load })
 
     // Table structure
     const columns: Array<ISchematicColumn> = [
@@ -40,17 +61,27 @@ export const GuestTable: React.FC<GuestTableProps> = ({ guests, deleteGuest, new
         }
     ]
 
+
     const renderCell = (guest: IGuest, columnKey: React.Key) => {
         console.log("Render cell: ", guest);
 
         // @ts-ignore
         const cellValue: any = guest[columnKey];
         switch (columnKey) {
-            case "level":
-                return (<Text>{cellValue}</Text>)
+            case "guests":
+                return (<Text>{guest.additionalGuestAmount}</Text>)
+            case "present":
+                return (<Text>{guest.additionalGuestCheckedin}</Text>)
             case "name":
                 return (
-                    <User squared text={guest.firstName} name={guest.firstName + " " + guest.lastName}>
+                    <User
+                        squared
+                        text={guest.firstName}
+                        name={guest.firstName + " " + guest.lastName}
+                        bordered={guest.checkedIn}
+                        color="success"
+                        zoomed
+                    >
                         <p></p>
                     </User>
                 );
@@ -58,7 +89,7 @@ export const GuestTable: React.FC<GuestTableProps> = ({ guests, deleteGuest, new
             case "actions":
                 return (
                     <Row justify="flex-end">
-                        <Col css={{ d: "flex" }}>
+                        <Col className="flex gap-4 ml-0">
                             <Tooltip
                                 content={t("edit")}
                             >
@@ -97,13 +128,17 @@ export const GuestTable: React.FC<GuestTableProps> = ({ guests, deleteGuest, new
                         hideHeader={column.key == "actions"}
                         // @ts-ignore
                         width={column.key === "actions" ? "12px" : "auto"}
-                        align={column.key === "actions" ? "center" : "start"}
+                        align={column.key === "actions" ? "center" : "start"}                        
                     >
                         {column.label}
                     </Table.Column>
                 )}
             </Table.Header>
-            <Table.Body items={guests}>
+            <Table.Body
+                items={list.items}
+                loadingState={list.loadingState}
+                onLoadMore={list.loadMore}
+            >
                 {(item) => (
                     <Table.Row key={item.id}>
                         {(columnKey) =>

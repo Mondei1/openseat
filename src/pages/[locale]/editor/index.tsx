@@ -14,6 +14,8 @@ import { UserAddIcon } from "@/components/icons/UserAddIcon";
 import { latLngBounds, LatLngBounds } from 'leaflet';
 import { deleteSeat } from "@/components/Database";
 import { GuestTable } from "@/components/editor/GuestTable";
+import { GuestModal } from "@/components/editor/GuestModal";
+import { AnimatePresence, motion, useAnimation } from "framer-motion";
 
 interface ILayerColumn {
   key: Key,
@@ -32,16 +34,18 @@ export default function Router() {
   const [mapState, setMapState] = useState(false)
   const Map = dynamic(() => import("../../../components/Map").then(res => res.Map), { ssr: false });
 
-  let [mapUrl, setMapUrl] = useState("")
-  let [mapHeight, setMapHeight] = useState(0)
-  let [mapWidth, setMapWidth] = useState(0)
+  const [mapUrl, setMapUrl] = useState("")
+  const [mapHeight, setMapHeight] = useState(0)
+  const [mapWidth, setMapWidth] = useState(0)
 
-  let [seats, setSeats] = useState<ISeat[]>([])
-  let [guests, setGuests] = useState<IGuest[]>([])
+  const [seats, setSeats] = useState<ISeat[]>([])
+  const [guests, setGuests] = useState<IGuest[]>([])
+  const [layerId, setLayerId] = useState(1)
 
-  let [seatEdit, setSeatEdit] = useState(false)
-  let [guestEdit, setGuestEdit] = useState(false)
-  let [layerId, setLayerId] = useState(1)
+  const [seatEdit, setSeatEdit] = useState(false)
+  const [guestEdit, setGuestEdit] = useState(false)
+
+  const [guestModal, setGuestModal] = useState(false)
 
   let [defaultCapacity, setDefaultCapacity] = useState(6)
 
@@ -89,7 +93,7 @@ export default function Router() {
   async function addNewSeat(bounds: LatLngBounds) {
     if (database === null) return
     let amount = await getHighestSeatId(database!)
-    
+
     if (amount === null) return;
 
     let seat: ISeat = {
@@ -135,8 +139,6 @@ export default function Router() {
   }
 
   function back() {
-    console.log("Back!");
-
     router.push({
       pathname: "/"
     })
@@ -158,10 +160,11 @@ export default function Router() {
 
   useEffect(() => {
     loadDatabase().then(() => {
-      setTimeout(() => {
+      setTimeout(async () => {
         console.log("Set layer id after db init");
 
         setLayerId(1)
+        setGuests((await getGuests(database!))!)
       }, 500)
     })
   }, [])
@@ -196,34 +199,44 @@ export default function Router() {
             removeSeat={removeSeat}
           />
 
-          {guestEdit &&
-            <Sidebar key={"guest-sidebar"}>
-              <div className="flex gap-4">
-                <Input
-                  contentLeft={<SearchIcon />}
-                  bordered
-                  width="100%"
-                  css={{ backgroundColor: "rgba(var(--background-rgb), 0.3)" }}
-                  placeholder={t("map.search")!}
-                />
-                <Button
-                  bordered
-                  color={"gradient"}
-                  icon={<UserAddIcon />}
-                  shadow={hover}
-                  onMouseOver={() => { setHover(true) }}
-                  onMouseLeave={() => { setHover(false) }}
-                  auto
-                >
-                  {t("map.new_guest")}
-                </Button>
-              </div>
+          <GuestModal
+            t={t}
+            visible={guestModal}
+            closeHandler={() => { setGuestModal(false) }}
+            addGuest={addNewGuest}
+          />
 
-              <Spacer y={1} />
+          <AnimatePresence mode="wait">
+            {guestEdit &&
+              <Sidebar key={"guest-sidebar"}>
+                <div className="flex gap-4">
+                  <Input
+                    contentLeft={<SearchIcon />}
+                    bordered
+                    width="100%"
+                    css={{ backgroundColor: "rgba(var(--background-rgb), 0.3)" }}
+                    placeholder={t("map.search")!}
+                  />
+                  <Button
+                    bordered
+                    color={"gradient"}
+                    icon={<UserAddIcon />}
+                    shadow={hover}
+                    onMouseOver={() => { setHover(true) }}
+                    onMouseLeave={() => { setHover(false) }}
+                    onPress={() => setGuestModal(true)}
+                    auto
+                  >
+                    {t("map.new_guest")}
+                  </Button>
+                </div>
 
-              <GuestTable guests={guests} deleteGuest={removeGuest} newGuest={addNewGuest} />
-            </Sidebar>
-          }
+                <Spacer y={1} />
+
+                <GuestTable db={database!} deleteGuest={removeGuest} newGuest={addNewGuest} />
+              </Sidebar>
+            }
+          </AnimatePresence>
 
           {seatEdit && <>
             <div className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode">

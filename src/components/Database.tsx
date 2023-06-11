@@ -8,7 +8,7 @@ export enum DatabaseInfoKey {
 }
 
 export interface IGuest {
-    id: number,
+    id?: number,
     firstName: string,
     lastName: string,
     additionalGuestAmount: number,
@@ -211,9 +211,11 @@ export async function getHighestSeatId(db: Database): Promise<number> {
 }
 
 export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
+    console.log("save ", guest);
+    
     try {
-        await db.execute("INSERT INTO guest (first_name, last_name, guests_amount, guests_checkedin, checkedin) VALUES ($1, $2, $3, $4, $5)",
-            [guest.firstName, guest.lastName, guest.additionalGuestAmount, guest.additionalGuestCheckedin, guest.checkedIn])
+        await db.execute("INSERT INTO participant (first_name, last_name, guests_amount, guests_checkedin, checkedin) VALUES ($1, $2, $3, $4, $5)",
+            [guest.firstName, guest.lastName, guest.additionalGuestAmount | 0, guest.additionalGuestCheckedin, guest.checkedIn])
 
         return true
     } catch (err) {
@@ -223,12 +225,55 @@ export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
     }
 }
 
+function convertGuest(dbResult: any[]): Array<IGuest> {
+    let result = new Array<IGuest>(dbResult.length)
+    for (let i = 0; i < dbResult.length; i++) {
+        const element = dbResult[i];
+        
+        result.push({
+            id: element.id,
+            firstName: element.first_name,
+            lastName: element.last_name,
+            additionalGuestAmount: element.guests_amount,
+            additionalGuestCheckedin: element.guests_checkedin,
+            checkedIn: element.checkedin === "true" ? true : false
+        })
+    }
+
+    return result
+}
+
 export async function getGuests(db: Database): Promise<Array<IGuest>> {
     try {
-        return (await db.select("SELECT * FROM participant")) || []
+        let rawResult: any[] = await db.select("SELECT * FROM participant ORDER BY id")
+        if (rawResult === null || rawResult.length == 0) {
+            return []
+        }
+
+        return convertGuest(rawResult)
     } catch (err) {
         console.error("Couldn't get guests: ", err)
 
+        return []
+    }
+}
+
+/**
+ * Used to paginate the response.
+ * 
+ * @param cursor: Where to start returning the next `amount` of results.
+ */
+export async function getGuestPage(db: Database, lastId: number, amount: number): Promise<Array<IGuest>> {
+    try {
+        let rawResult: any[] = await db.select("SELECT * FROM participant WHERE id > $1 ORDER BY id LIMIT $2", [lastId, amount])
+        if (rawResult === null || rawResult.length == 0) {
+            return []
+        }
+
+        return convertGuest(rawResult)
+    } catch (err) {
+        console.error("Couldn't paginate guests: ", err);
+        
         return []
     }
 }

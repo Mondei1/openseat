@@ -12,11 +12,17 @@
     "up": "Up",
     "down": "Down",
     "delete": "Delete",
+    "clear_input": "Clear input",
     "settings": "Settings",
     "settings_modal": {
         "language": "Select language",
         "theme": "Change color schema"
     },
+    "first_name": "First name",
+    "last_name": "Last name",
+    "additional_guests": "Additional guests",
+    "add_guest": "Add new guest",
+    "add_guest_tip": "Tip: Press Enter to save fast.",
     "setup": {
         "welcome": "Setup",
         "text": "To create a new seating plan you have to answer a few questions first.",

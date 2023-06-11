@@ -12,11 +12,17 @@
     "up": "hoch",
     "down": "runter",
     "delete": "löschen",
+    "clear_input": "Eingabe löschen",
     "settings": "Einstellungen",
     "settings_modal": {
         "language": "Sprache auswählen",
         "theme": "Farbschema ändern"
     },
+    "first_name": "Vorname",
+    "last_name": "Nachname",
+    "additional_guests": "zusätzliche Gäste",
+    "add_guest": "Gast hinzufügen",
+    "add_guest_tip": "Tipp: Drücke Enter zum schnellen speichern.",
     "setup": {
         "welcome": "Einrichtung",
         "text": "Zuerst musst du ein paar Fragen beantworten bevor es losgehen kann.",
