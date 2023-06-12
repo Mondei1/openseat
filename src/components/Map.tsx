@@ -10,6 +10,7 @@ import { ISeat } from './Database';
 import { Dropdown } from '@nextui-org/react';
 import { DeleteIcon } from './icons/DeleteIcon';
 import { TFunction } from 'next-i18next';
+import { UsersIcon } from './icons/UsersIcon';
 
 interface IMapSeat extends ISeat {
     bounds?: LatLngBounds,
@@ -35,11 +36,16 @@ type SeatViewerProps = {
     removeSeat: (seatId: number) => void
 }
 
-type SeatDropdownProps = {
+type SeatEditDropdownProps = {
     t: TFunction,
     seats: ISeat[],
     enableSeatEdit: boolean,
     removeSeat: (seatId: number) => void
+}
+
+type SeatDropdownProps = {
+    t: TFunction,
+    seats: ISeat[]
 }
 
 const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, removeSeat, enableSeatEdit }) => {
@@ -147,7 +153,57 @@ function getSeatAt(map: L.Map, mapSeats: IMapSeat[], point: L.Point) {
     return null
 }
 
-const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, enableSeatEdit, removeSeat, t, ...props }) => {
+const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, t, ...props }) => {
+    let [showContextMenu, setShowContextMenu] = useState(false)
+    let [contextMenuCoords, setContextMenuCoords] = useState<number[]>([])
+    let [targetSeat, setTargetSeat] = useState<IMapSeat | null>()
+
+    const map = useMapEvents({
+        click(e) {
+            console.log(showContextMenu);
+            
+            if (showContextMenu) {
+                setShowContextMenu(false)
+                return
+            }
+            
+            const mapSeats = convertToMapSeat(seats)
+            setTargetSeat(getSeatAt(map, mapSeats, e.containerPoint))
+        
+            // No seat found. Ignore.
+            if (targetSeat === null) {
+                return
+            }
+
+            setContextMenuCoords([e.containerPoint.x, e.containerPoint.y])
+            setShowContextMenu(true)
+        }
+    })
+
+    return (<>
+        <Dropdown isOpen={showContextMenu} onClose={() => setTargetSeat(null)}>
+            <Dropdown.Trigger style={{ position: "absolute", opacity: 0.5, zIndex: 999999, top: `${contextMenuCoords[1]}px`, left: `${contextMenuCoords[0]}px` }}>
+                <div></div>
+            </Dropdown.Trigger>
+            <Dropdown.Menu
+                variant="light"
+                aria-label="Actions"
+                disabledKeys={["people"]}
+                onAction={(key) => {
+                    if (key.toString() == "delete") {
+                        
+                    }
+                }}
+            >
+                <Dropdown.Item key="people" icon={<UsersIcon />}>
+                    {t("seats")}: 0 {t("of")} {targetSeat?.capacity}
+                </Dropdown.Item>
+            </Dropdown.Menu>
+        </Dropdown>
+    </>)
+}
+
+const SeatEditDropdown: React.FC<SeatEditDropdownProps> = ({ seats, enableSeatEdit, removeSeat, t, ...props }) => {
     let [showContextMenu, setShowContextMenu] = useState(false)
     let [contextMenuCoords, setContextMenuCoords] = useState<number[]>([])
     let [targetSeat, setTargetSeat] = useState<IMapSeat | null>()
@@ -243,7 +299,8 @@ export const Map: React.FC<MapProps> = ({
         >
 
             <PreserveLocation />
-            <SeatDropdown t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
+            <SeatDropdown t={t} seats={seats} />
+            <SeatEditDropdown t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
 
             <SeatViewer seats={seats} addNewSeat={setSeats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} mapUrl={mapUrl} />
 

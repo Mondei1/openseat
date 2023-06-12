@@ -1,11 +1,13 @@
-import { Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip, User, useAsyncList } from "@nextui-org/react"
+import { Avatar, Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip, User, useAsyncList } from "@nextui-org/react"
 import React, { Key, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { IFloor, IGuest, getGuestPage, getGuests } from "../Database"
+import { IGuest, getGuests, getPossibleAssignments } from "../Database"
 import { IconButton } from "../IconButton"
 import { DeleteIcon } from "../icons/DeleteIcon"
 import { EditIcon } from "../icons/EditIcon"
 import Database from "tauri-plugin-sql-api"
+import { MinusIcon } from "../icons/MinusIcon"
+import { PlusIcon } from "../icons/PlusIcon"
 
 interface ISchematicColumn {
     key: Key,
@@ -15,31 +17,23 @@ interface ISchematicColumn {
 type GuestTableProps = {
     //guests: Array<IGuest>,
     db: Database,
+    guests: IGuest[],
     deleteGuest: (guestId: number) => void,
+    toggleGuest: (guestId: number) => void,
     newGuest: (guest: IGuest) => void
 }
 
-export const GuestTable: React.FC<GuestTableProps> = ({ db, deleteGuest, newGuest }) => {
+export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest, newGuest, toggleGuest }) => {
     const { t } = useTranslation('common')
 
-    const [guests, setGuests] = useState<IGuest[]>([])
+    const [filteredGuests, setFilteredGuests] = useState<IGuest[]>([])
 
     useEffect(() => {
-        getGuests(db).then(g => {
-            setGuests(g)
+        getGuests(db).then(async g => {
+            setFilteredGuests(g)
+            await getPossibleAssignments(db, 5)
         })
     }, [])
-
-    // @ts-ignore
-    async function load({ signal, cursor }) {
-        return {
-            items: await getGuestPage(db, cursor || 0, 3),
-            cursor: (cursor || 0) + 3
-        }
-    }
-
-    // @ts-ignore
-    const list = useAsyncList({ load })
 
     // Table structure
     const columns: Array<ISchematicColumn> = [
@@ -63,50 +57,70 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, deleteGuest, newGues
 
 
     const renderCell = (guest: IGuest, columnKey: React.Key) => {
-        console.log("Render cell: ", guest);
-
         // @ts-ignore
         const cellValue: any = guest[columnKey];
         switch (columnKey) {
             case "guests":
                 return (<Text>{guest.additionalGuestAmount}</Text>)
             case "present":
-                return (<Text>{guest.additionalGuestCheckedin}</Text>)
+                return (<div className="flex gap-2">
+                    <IconButton>
+                        <MinusIcon
+                            // @ts-ignore: Color props exists but I'm lazy.
+                            color={guest.additionalGuestCheckedin == 0 ? "gray" : "white"}
+                            width={16}
+                            height={16}
+                        />
+                    </IconButton>
+                    <Text>{guest.additionalGuestCheckedin}</Text>
+                    <IconButton>
+                        <PlusIcon
+                            // @ts-ignore: Color props exists but I'm lazy.
+                            color={(guest.additionalGuestCheckedin + 1) > guest.additionalGuestAmount ? "gray" : "white"}
+                            width={16}
+                            height={16}
+                        />
+                    </IconButton>
+                </div>)
             case "name":
                 return (
-                    <User
-                        squared
-                        text={guest.firstName}
-                        name={guest.firstName + " " + guest.lastName}
-                        bordered={guest.checkedIn}
-                        color="success"
-                        zoomed
+                    <Tooltip
+                        content={guest.checkedIn ? t("map.click_to_checkout") : t("map.click_to_checkin")}
+                        onClick={() => { toggleGuest(guest.id!) }}
+                        placement="right"
                     >
-                        <p></p>
-                    </User>
+                        <User
+                            squared
+                            text={guest.firstName}
+                            name={`${guest.firstName} ${guest.lastName} (${guest.id})`}
+                            color={guest.checkedIn ? "success" : "default"}
+                            bordered
+                            zoomed
+                        >
+                            <p></p>
+                        </User>
+                    </Tooltip>
                 );
 
             case "actions":
                 return (
-                    <Row justify="flex-end">
-                        <Col className="flex gap-4 ml-0">
-                            <Tooltip
-                                content={t("edit")}
-                            >
-                                <IconButton>
-                                    <EditIcon size={20} />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip
-                                content={t("delete")}
-                                color="error"
-                            >
-                                <IconButton>
-                                    <DeleteIcon size={20} fill="#FF0080" />
-                                </IconButton>
-                            </Tooltip>
-                        </Col>
-                    </Row>
+                    <Col className="flex gap-4 ml-0">
+                        <Tooltip
+                            content={t("edit")}
+                        >
+                            <IconButton>
+                                <EditIcon size={20} />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip
+                            content={t("delete")}
+                            color="error"
+                        >
+                            <IconButton onClick={async () => { deleteGuest(guest.id!); setFilteredGuests(await getGuests(db)) }}>
+                                <DeleteIcon size={20} fill="#FF0080" />
+                            </IconButton>
+                        </Tooltip>
+                    </Col>
                 );
             default:
                 return cellValue;
@@ -115,7 +129,9 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, deleteGuest, newGues
 
     return (<>
         <Table
-            bordered={true}
+            bordered={false}
+            headerLined={true}
+            striped={true}
             css={{
                 height: "auto",
                 minWidth: "100%",
@@ -127,17 +143,15 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, deleteGuest, newGues
                         key={column.key}
                         hideHeader={column.key == "actions"}
                         // @ts-ignore
-                        width={column.key === "actions" ? "12px" : "auto"}
-                        align={column.key === "actions" ? "center" : "start"}                        
+                        width={column.key === "actions" ? "16px" : "auto"}
+                        align={column.key === "actions" ? "center" : "start"}
                     >
                         {column.label}
                     </Table.Column>
                 )}
             </Table.Header>
             <Table.Body
-                items={list.items}
-                loadingState={list.loadingState}
-                onLoadMore={list.loadMore}
+                items={guests}
             >
                 {(item) => (
                     <Table.Row key={item.id}>
@@ -147,7 +161,13 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, deleteGuest, newGues
                     </Table.Row>
                 )}
             </Table.Body>
+            <Table.Pagination
+                shadow
+                noMargin
+                align="center"
+                rowsPerPage={20}
+            />
         </Table>
-        
+
     </>)
 }

@@ -2,7 +2,7 @@
     "app_name": "Open Seat",
     "project_open": "Projekt öffnen",
     "project_new": "Projekt erstellen",
-    "next": "weiter",
+    "next": "Weiter",
     "file_path": "Dateipfad",
     "level": "Level",
     "name": "Name",
@@ -11,8 +11,10 @@
     "edit": "Bearbeiten",
     "up": "hoch",
     "down": "runter",
-    "delete": "löschen",
+    "delete": "Löschen",
     "clear_input": "Eingabe löschen",
+    "seats": "Sitze",
+    "of": "von",
     "settings": "Einstellungen",
     "settings_modal": {
         "language": "Sprache auswählen",
@@ -42,7 +44,9 @@
         "search": "Gast suchen",
         "edit_mode": "Editiermodus",
         "default_seat_capacity": "Standard Sitzplätze",
-        "seat": "Sitz"
+        "seat": "Sitz",
+        "click_to_checkin": "Klicke um Gast einzuchecken",
+        "click_to_checkout": "Klicke um Gast auszuchecken"
     },
     "keys": {
         "del": "Entf"

@@ -1,4 +1,5 @@
 import Database from "tauri-plugin-sql-api";
+import { escape } from "sqlstring";
 
 export const CURRENT_DATABASE_VERSION = 1
 
@@ -226,7 +227,7 @@ export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
 }
 
 function convertGuest(dbResult: any[]): Array<IGuest> {
-    let result = new Array<IGuest>(dbResult.length)
+    let result = new Array<IGuest>()
     for (let i = 0; i < dbResult.length; i++) {
         const element = dbResult[i];
         
@@ -236,11 +237,26 @@ function convertGuest(dbResult: any[]): Array<IGuest> {
             lastName: element.last_name,
             additionalGuestAmount: element.guests_amount,
             additionalGuestCheckedin: element.guests_checkedin,
-            checkedIn: element.checkedin === "true" ? true : false
+            checkedIn: (element.checkedin === "true" ? true : false) || (element.checkedin === 1 ? true : false)
         })
     }
 
     return result
+}
+
+export async function updateGuest(db: Database, guest: IGuest) {
+    try {
+        db.execute(`UPDATE participant SET
+            first_name = $1
+            last_name = $2
+            guests_amount = $3
+            guests_checkedin = $4
+            checkedin $5
+            WHERE id = $6`,
+            [guest.firstName, guest.lastName, guest.additionalGuestAmount, guest.additionalGuestCheckedin, guest.checkedIn, guest.id])
+    } catch (err) {
+        console.error(`Couldn't update guest ${guest.id}: ${err}`);
+    }
 }
 
 export async function getGuests(db: Database): Promise<Array<IGuest>> {
@@ -278,6 +294,26 @@ export async function getGuestPage(db: Database, lastId: number, amount: number)
     }
 }
 
+export async function searchGuests(db: Database, term: string): Promise<Array<IGuest>> {
+    try {
+        let escaped: string = escape(term)
+        escaped = escaped.substring(1)
+        escaped = escaped.substring(0, escaped.length - 1)
+        
+        // I need to manually escape the user input as Rust's SQLX fails to detect "$1%" as variable.
+        let rawResult: any[] = await db.select(`SELECT * FROM participant WHERE LOWER(first_name) LIKE LOWER('${escaped}%') OR last_name LIKE LOWER('${escaped}%')`)
+        if (rawResult === null || rawResult.length == 0) {
+            return []
+        }
+
+        return convertGuest(rawResult)
+    } catch (err) {
+        console.error(`Couldn't search for term ${term}: ${err}`);
+        
+        return []
+    }
+}
+
 export async function deleteGuest(db: Database, guestId: number): Promise<boolean> {
     try {
         await db.execute("DELETE FROM participant WHERE id = $1", [guestId])
@@ -287,5 +323,51 @@ export async function deleteGuest(db: Database, guestId: number): Promise<boolea
         console.error(`Deletion of guest ${guestId} failed: ${err}`)
 
         return false
+    }
+}
+
+export async function toggleGuestStatus(db: Database, guestId: number) {
+    try {
+        await db.execute(`UPDATE participant SET checkedin = CASE WHEN checkedin = 1 THEN 0 ELSE 1 END WHERE id = $1`, [guestId])
+    } catch (err) {
+        console.error(`Failed to toggle status of guest ${guestId}: ${err}`);
+    }
+}
+
+/**
+ * Find a list of seats that are assignable.
+ * @returns Array of seat ids where target guest can be assgined to.
+ */
+export async function getPossibleAssignments(db: Database, guestId: number): Promise<number[]> {
+    try {
+        let result: any[] = await db.select(`SELECT s.id
+            FROM seat_assignment AS sa
+            INNER JOIN participant AS p ON p.id = sa.participant_id
+            INNER JOIN seat AS s ON s.id == sa.seat_id
+            WHERE sa.participant_id = $1 AND (p.guests_amount + 1) <= s.capacity`, [guestId])
+
+        console.log(result);
+        
+        return result.map(x => {
+            return x.seat_id
+        })
+    } catch (err) {
+        console.error(`Couldn't determine if guest ${guestId} could be seated anywhere: ${err}`)
+        
+        return []
+    }
+}
+
+export async function assignSeat(db: Database, guestId: number, seatId: number) {
+    // Check if guest can't be seated there.
+    if ((await getPossibleAssignments(db, guestId)).indexOf(seatId) === -1) {
+        return
+    }
+
+    try {
+        await db.execute("INSERT INTO seat_assignment (participant_id, seat_id) VALUES ($1, $2)", [guestId, seatId])
+    } catch (err) {
+        console.error(`Couldn't save seat assignment of guest ${guestId} to seat ${seatId}: ${err}`);
+        
     }
 }

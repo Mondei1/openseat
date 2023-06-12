@@ -2,7 +2,7 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Key, useEffect, useMemo, useState } from "react";
 import Database from "tauri-plugin-sql-api";
-import { IGuest, ISeat, addGuest, addSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeats } from "@/components/Database";
+import { IGuest, ISeat, addGuest, addSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeats, searchGuests, toggleGuestStatus } from "@/components/Database";
 import dynamic from "next/dynamic";
 import { Button, Divider, Input, Loading, Spacer, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
@@ -90,6 +90,15 @@ export default function Router() {
     }
   }, [layerId, database])
 
+  async function search(searchTerm: string) {
+    if (searchTerm.trim() === "") {
+      setGuests(await getGuests(database!))
+      return
+    }
+
+    setGuests(await searchGuests(database!, searchTerm))
+  }
+
   async function addNewSeat(bounds: LatLngBounds) {
     if (database === null) return
     let amount = await getHighestSeatId(database!)
@@ -144,8 +153,14 @@ export default function Router() {
     })
   }
 
-  const editGuests = () => {
+  async function editGuests() {
+    setGuests((await getGuests(database!)))
     setGuestEdit(!guestEdit)
+  }
+
+  async function toggleGuest(guestId: number) {
+    await toggleGuestStatus(database!, guestId)
+    setGuests((await getGuests(database!))!)
   }
 
   async function editLayer() {
@@ -165,7 +180,7 @@ export default function Router() {
 
         setLayerId(1)
         setGuests((await getGuests(database!))!)
-      }, 500)
+      })
     })
   }, [])
 
@@ -213,8 +228,10 @@ export default function Router() {
                   <Input
                     contentLeft={<SearchIcon />}
                     bordered
+                    clearable
                     width="100%"
                     css={{ backgroundColor: "rgba(var(--background-rgb), 0.3)" }}
+                    onChange={(e) => { search(e.target.value) }}
                     placeholder={t("map.search")!}
                   />
                   <Button
@@ -233,7 +250,13 @@ export default function Router() {
 
                 <Spacer y={1} />
 
-                <GuestTable db={database!} deleteGuest={removeGuest} newGuest={addNewGuest} />
+                <GuestTable
+                  db={database!}
+                  guests={guests}
+                  deleteGuest={removeGuest}
+                  newGuest={addNewGuest}
+                  toggleGuest={toggleGuest}
+                />
               </Sidebar>
             }
           </AnimatePresence>

@@ -13,6 +13,8 @@
     "down": "Down",
     "delete": "Delete",
     "clear_input": "Clear input",
+    "seats": "Seats",
+    "of": "of",
     "settings": "Settings",
     "settings_modal": {
         "language": "Select language",
@@ -42,7 +44,9 @@
         "search": "Search guest",
         "edit_mode": "Edit mode",
         "default_seat_capacity": "Default capacity",
-        "seat": "Seat"
+        "seat": "Seat",
+        "click_to_checkin": "Click to check in guest",
+        "click_to_checkout": "Click to check out guest"
     },
     "keys": {
         "del": "Del"

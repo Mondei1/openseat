@@ -9,7 +9,9 @@ export type GuestModalProps = {
     t: TFunction,
     visible: boolean,
     closeHandler: () => void,
-    addGuest: (guest: IGuest) => void
+    addGuest: (guest: IGuest) => void,
+    updateGuest: (guest: IGuest) => void,
+    editGuest?: IGuest
 }
 
 export const GuestModal: React.FC<GuestModalProps> = ({ t, closeHandler, visible, addGuest }) => {
@@ -109,16 +111,7 @@ export const GuestModal: React.FC<GuestModalProps> = ({ t, closeHandler, visible
             </Modal.Body>
 
             <Modal.Footer>
-                <div className="grid gap-4 grid-cols-2">
-                    <Button
-                        auto
-                        bordered
-                        color="error"
-                        icon={<EraserIcon />}
-                        onPress={clear}
-                    >
-                        {t("clear_input")}
-                    </Button>
+                <div className="grid grid-cols-1 grid-rows-2 gap-4 w-full">
                     <Button
                         auto
                         onPress={save}
@@ -126,8 +119,19 @@ export const GuestModal: React.FC<GuestModalProps> = ({ t, closeHandler, visible
                     >
                         {t("add_guest")}
                     </Button>
+
+                    <Button
+                        auto
+                        bordered
+                        color="error"
+                        css={{ width: "100%" }}
+                        icon={<EraserIcon />}
+                        onPress={clear}
+                    >
+                        {t("clear_input")}
+                    </Button>
                 </div>
-                
+
                 <Text small color="gray" className="pt-3">{t("add_guest_tip")}</Text>
             </Modal.Footer>
         </Modal>
