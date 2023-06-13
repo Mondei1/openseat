@@ -46,7 +46,8 @@
         "default_seat_capacity": "Standard Sitzplätze",
         "seat": "Sitz",
         "click_to_checkin": "Klicke um Gast einzuchecken",
-        "click_to_checkout": "Klicke um Gast auszuchecken"
+        "click_to_checkout": "Klicke um Gast auszuchecken",
+        "assign_seat": "Sitzplatz zuweisen"
     },
     "keys": {
         "del": "Entf"

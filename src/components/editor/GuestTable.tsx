@@ -1,13 +1,14 @@
 import { Avatar, Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip, User, useAsyncList } from "@nextui-org/react"
 import React, { Key, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { IGuest, getGuests, getPossibleAssignments } from "../Database"
+import { IGuest, getGuests, getSeatOccupations } from "../Database"
 import { IconButton } from "../IconButton"
 import { DeleteIcon } from "../icons/DeleteIcon"
 import { EditIcon } from "../icons/EditIcon"
 import Database from "tauri-plugin-sql-api"
 import { MinusIcon } from "../icons/MinusIcon"
 import { PlusIcon } from "../icons/PlusIcon"
+import { ChairIcon } from "../icons/ChairIcon"
 
 interface ISchematicColumn {
     key: Key,
@@ -20,10 +21,10 @@ type GuestTableProps = {
     guests: IGuest[],
     deleteGuest: (guestId: number) => void,
     toggleGuest: (guestId: number) => void,
-    newGuest: (guest: IGuest) => void
+    startGuestOccupation: (guest: IGuest) => void
 }
 
-export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest, newGuest, toggleGuest }) => {
+export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest, startGuestOccupation, toggleGuest }) => {
     const { t } = useTranslation('common')
 
     const [filteredGuests, setFilteredGuests] = useState<IGuest[]>([])
@@ -31,7 +32,6 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
     useEffect(() => {
         getGuests(db).then(async g => {
             setFilteredGuests(g)
-            await getPossibleAssignments(db, 5)
         })
     }, [])
 
@@ -97,14 +97,21 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                             bordered
                             zoomed
                         >
-                            <p></p>
+                            <p>{ guest.seatId !== null ? `${t("map.seat")} ${guest.seatId}` : "" }</p>
                         </User>
                     </Tooltip>
                 );
 
             case "actions":
                 return (
-                    <Col className="flex gap-4 ml-0">
+                    <Col className="flex gap-3 ml-0">
+                        <Tooltip
+                            content={t("map.assign_seat")}
+                        >
+                            <IconButton onClick={() => startGuestOccupation(guest)}>
+                                <ChairIcon size={20} />
+                            </IconButton>
+                        </Tooltip>
                         <Tooltip
                             content={t("edit")}
                         >

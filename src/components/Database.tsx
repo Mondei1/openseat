@@ -14,7 +14,10 @@ export interface IGuest {
     lastName: string,
     additionalGuestAmount: number,
     additionalGuestCheckedin: number,
-    checkedIn: boolean
+    checkedIn: boolean,
+
+    // I know, wrong case but I don't want to rename it.
+    seatId?: number
 }
 
 export interface IFloor {
@@ -35,51 +38,41 @@ export interface ISeat {
     floor_id: number
 }
 
+export interface ISeatOccupation {
+    id: number,
+    occupied: number,
+    left: number
+}
+
 export async function initDatabase(db: Database, databaseName: string, schematics: IFloor[]): Promise<boolean> {
     // Create table storing the current schema version allowing for future migrations. 
     await db.execute("BEGIN TRANSACTION;")
 
     try {
-      await db.execute("CREATE TABLE IF NOT EXISTS info (`key` INTEGER NOT NULL PRIMARY KEY, `data` TEXT NOT NULL);")
-      await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Version, CURRENT_DATABASE_VERSION])
-      await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Name, databaseName])
+        await db.execute("CREATE TABLE IF NOT EXISTS info (`key` INTEGER NOT NULL PRIMARY KEY, `data` TEXT NOT NULL);")
+        await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Version, CURRENT_DATABASE_VERSION])
+        await db.execute("INSERT INTO info VALUES ($1, $2)", [DatabaseInfoKey.Name, databaseName])
 
-      await db.execute(`CREATE TABLE IF NOT EXISTS participant (
-        id INTEGER PRIMARY KEY,
-        first_name VARCHAR(255) NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        guests_amount INTEGER NOT NULL,
-        guests_checkedin INTEGER NOT NULL,
-        checkedin BOOLEAN NOT NULL DEFAULT false
-      );`)
-
-      /*await db.execute(`CREATE TABLE IF NOT EXISTS guest (
-        id INTEGER PRIMARY KEY,
-        participant_id INT NOT NULL,
-        last_name VARCHAR(255) NOT NULL,
-        first_name VARCHAR(255) NOT NULL,
-        FOREIGN KEY (participant_id)
-          REFERENCES participant (id)
-      );`)*/
-
-      await db.execute(`CREATE TABLE IF NOT EXISTS floor (
+        await db.execute(`CREATE TABLE IF NOT EXISTS floor (
         id INTEGER PRIMARY KEY,
         level INT NOT NULL UNIQUE,
         name TEXT NOT NULL,
         image BLOB NOT NULL
       )`)
 
-      await db.execute(`CREATE TABLE IF NOT EXISTS seat_assignment (
-        participant_id INTEGER,
+        await db.execute(`CREATE TABLE IF NOT EXISTS participant (
+        id INTEGER PRIMARY KEY,
+        first_name VARCHAR(255) NOT NULL,
+        last_name VARCHAR(255) NOT NULL,
+        guests_amount INTEGER NOT NULL,
+        guests_checkedin INTEGER NOT NULL,
+        checkedin BOOLEAN NOT NULL DEFAULT false,
         seat_id INTEGER,
-        FOREIGN KEY (participant_id)
-          REFERENCES participant (id),
         FOREIGN KEY (seat_id)
-          REFERENCES seat (id),
-        PRIMARY KEY (participant_id, seat_id)
-      )`)
+          REFERENCES seat (id)
+      );`)
 
-      await db.execute(`CREATE TABLE IF NOT EXISTS seat (
+        await db.execute(`CREATE TABLE IF NOT EXISTS seat (
         id INTEGER PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         capacity INT NOT NULL,
@@ -92,25 +85,26 @@ export async function initDatabase(db: Database, databaseName: string, schematic
           REFERENCES floor (id)
       )`)
 
-      for (let i = 0; i < schematics.length; i++) {
-        const schematic = schematics[i]
+        for (let i = 0; i < schematics.length; i++) {
+            const schematic = schematics[i]
 
-        try {
-          let floorId = (await db.execute(`INSERT INTO floor (level, name, image) VALUES ($1, $2, $3)`, [schematic.level, schematic.name, schematic.image])).lastInsertId
-          console.debug("Inserted ID: " + floorId)
-        } catch (err) {
-          console.error(`Skip import of floor ${schematic.name}: ${err}`)
+            try {
+                // @ts-ignore: Yes, you can do Array.from([UInt8Array]). Don't listen to TypeScript.
+                let floorId = (await db.execute(`INSERT INTO floor (level, name, image) VALUES ($1, $2, $3)`, [schematic.level, schematic.name, Array.from(schematic.image)])).lastInsertId
+                console.debug("Inserted ID: " + floorId)
+            } catch (err) {
+                console.error(`Skip import of floor ${schematic.name}: ${err}`)
+            }
         }
-      }
 
-      await db.execute("COMMIT;")
+        await db.execute("COMMIT;")
 
-      return true
+        return true
     } catch (err) {
-      await db.execute("ROLLBACK;")
-      console.error("SQLite failed with the following error and all changes were undone:", err)
+        await db.execute("ROLLBACK;")
+        console.error("SQLite failed with the following error and all changes were undone:", err)
 
-      return false
+        return false
     }
 }
 
@@ -142,7 +136,7 @@ export async function isValidDatabase(db: Database): Promise<boolean> {
 }
 
 export async function getFloorImage(db: Database, id: number): Promise<Uint8Array | null> {
-    try {        
+    try {
         // @ts-ignore
         let query: any[] = await db.select("SELECT image FROM floor WHERE id = $1", [id])
         let image: string = query[0].image
@@ -160,7 +154,7 @@ export async function getFloors(db: Database): Promise<Array<IFloor> | null> {
         return await db.select("SELECT id, level, name FROM floor ORDER BY level ASC;");
     } catch (err) {
         console.error("Selection of all floors failed:", err);
-        
+
         return null
     }
 }
@@ -179,7 +173,7 @@ export async function addSeat(db: Database, seat: ISeat): Promise<boolean> {
     try {
         await db.execute("INSERT INTO seat (name, capacity, floor_id, lat1, lat2, lng1, lng2) VALUES ($1, $2, $3, $4, $5, $6, $7)",
             [seat.name, seat.capacity, seat.floor_id, seat.lat1, seat.lat2, seat.lng1, seat.lng2])
-        
+
         return true
     } catch (err) {
         console.error("Failed to insert new seat: ", err)
@@ -213,7 +207,7 @@ export async function getHighestSeatId(db: Database): Promise<number> {
 
 export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
     console.log("save ", guest);
-    
+
     try {
         await db.execute("INSERT INTO participant (first_name, last_name, guests_amount, guests_checkedin, checkedin) VALUES ($1, $2, $3, $4, $5)",
             [guest.firstName, guest.lastName, guest.additionalGuestAmount | 0, guest.additionalGuestCheckedin, guest.checkedIn])
@@ -221,7 +215,7 @@ export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
         return true
     } catch (err) {
         console.error("Failed to insert new guest: ", err)
-        
+
         return false
     }
 }
@@ -230,14 +224,15 @@ function convertGuest(dbResult: any[]): Array<IGuest> {
     let result = new Array<IGuest>()
     for (let i = 0; i < dbResult.length; i++) {
         const element = dbResult[i];
-        
+
         result.push({
             id: element.id,
             firstName: element.first_name,
             lastName: element.last_name,
             additionalGuestAmount: element.guests_amount,
             additionalGuestCheckedin: element.guests_checkedin,
-            checkedIn: (element.checkedin === "true" ? true : false) || (element.checkedin === 1 ? true : false)
+            checkedIn: (element.checkedin === "true" ? true : false) || (element.checkedin === 1 ? true : false),
+            seatId: element.seat_id
         })
     }
 
@@ -289,7 +284,7 @@ export async function getGuestPage(db: Database, lastId: number, amount: number)
         return convertGuest(rawResult)
     } catch (err) {
         console.error("Couldn't paginate guests: ", err);
-        
+
         return []
     }
 }
@@ -299,7 +294,7 @@ export async function searchGuests(db: Database, term: string): Promise<Array<IG
         let escaped: string = escape(term)
         escaped = escaped.substring(1)
         escaped = escaped.substring(0, escaped.length - 1)
-        
+
         // I need to manually escape the user input as Rust's SQLX fails to detect "$1%" as variable.
         let rawResult: any[] = await db.select(`SELECT * FROM participant WHERE LOWER(first_name) LIKE LOWER('${escaped}%') OR last_name LIKE LOWER('${escaped}%')`)
         if (rawResult === null || rawResult.length == 0) {
@@ -309,7 +304,7 @@ export async function searchGuests(db: Database, term: string): Promise<Array<IG
         return convertGuest(rawResult)
     } catch (err) {
         console.error(`Couldn't search for term ${term}: ${err}`);
-        
+
         return []
     }
 }
@@ -338,36 +333,69 @@ export async function toggleGuestStatus(db: Database, guestId: number) {
  * Find a list of seats that are assignable.
  * @returns Array of seat ids where target guest can be assgined to.
  */
-export async function getPossibleAssignments(db: Database, guestId: number): Promise<number[]> {
+export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[]> {
     try {
-        let result: any[] = await db.select(`SELECT s.id
-            FROM seat_assignment AS sa
-            INNER JOIN participant AS p ON p.id = sa.participant_id
-            INNER JOIN seat AS s ON s.id == sa.seat_id
-            WHERE sa.participant_id = $1 AND (p.guests_amount + 1) <= s.capacity`, [guestId])
+        let queryResult: any[] = await db.select(`SELECT
+        s.id,
+        s.capacity,
+        (CASE WHEN p.id IS NULL THEN s.capacity ELSE s.capacity - (p.guests_amount + 1) END) AS \`left\`
+        FROM seat AS s
+        LEFT JOIN participant AS p ON p.seat_id = s.id`)
 
-        console.log(result);
-        
-        return result.map(x => {
-            return x.seat_id
+        // Id seen at index
+        let seenIds = new Map<number, number>()
+
+        queryResult = queryResult.filter((x, i) => {
+            if (seenIds.has(x.id)) {
+                let seenIndex = seenIds.get(x.id)!
+                queryResult[seenIndex].left -= x.left
+
+                return false
+            }
+
+            seenIds.set(x.id, i)
+            return true
         })
-    } catch (err) {
-        console.error(`Couldn't determine if guest ${guestId} could be seated anywhere: ${err}`)
+
+        let result: ISeatOccupation[] = []
         
+        for (let i = 0; i < queryResult.length; i++) {
+            const element = queryResult[i];
+            
+            result.push({
+                id: element.id,
+                left: element.left,
+                occupied: element.capacity - element.left
+            })
+        }
+        
+        return result
+    } catch (err) {
+        console.error(`Couldn't determine seat occupations: ${err}`)
+
         return []
     }
 }
 
-export async function assignSeat(db: Database, guestId: number, seatId: number) {
+export async function assignSeat(db: Database, guest: IGuest, seatId: number) {
     // Check if guest can't be seated there.
-    if ((await getPossibleAssignments(db, guestId)).indexOf(seatId) === -1) {
+    const occupations = await getSeatOccupations(db)
+    const targetSeat = occupations.find(x => x.id == seatId)
+
+    // Seat doesn't exist
+    if (targetSeat === undefined) {
+        return
+    }
+
+    if (targetSeat.left < (guest.additionalGuestAmount + 1)) {
+        console.error(`Cannot occupy seat for guest ${guest.firstName} ${guest.lastName} because there is no space left.`)
         return
     }
 
     try {
-        await db.execute("INSERT INTO seat_assignment (participant_id, seat_id) VALUES ($1, $2)", [guestId, seatId])
+        await db.execute("UPDATE participant SET seat_id = $1 WHERE id = $2", [seatId, guest.id])
     } catch (err) {
-        console.error(`Couldn't save seat assignment of guest ${guestId} to seat ${seatId}: ${err}`);
-        
+        console.error(`Couldn't save occupation for guest ${guest} and seat ${seatId}: ${err}`)
+
     }
 }

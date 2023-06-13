@@ -46,7 +46,8 @@
         "default_seat_capacity": "Default capacity",
         "seat": "Seat",
         "click_to_checkin": "Click to check in guest",
-        "click_to_checkout": "Click to check out guest"
+        "click_to_checkout": "Click to check out guest",
+        "assign_seat": "Assign seat"
     },
     "keys": {
         "del": "Del"

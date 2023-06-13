@@ -84,7 +84,10 @@ export const LayerManager: React.FC<LayerSelectorProps> = ({ schematics, setSche
         }
         setLoadingImage(false)
 
-        setSchematics(Array.prototype.concat(schematics, newFloor))
+        setSchematics(schematics.concat(newFloor))
+
+        console.log("New schematics: ", schematics);
+        
     }
 
     function deleteSchematic(id: number) {

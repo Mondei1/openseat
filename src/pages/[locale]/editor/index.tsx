@@ -2,7 +2,7 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Key, useEffect, useMemo, useState } from "react";
 import Database from "tauri-plugin-sql-api";
-import { IGuest, ISeat, addGuest, addSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeats, searchGuests, toggleGuestStatus } from "@/components/Database";
+import { IGuest, ISeat, ISeatOccupation, addGuest, addSeat, assignSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeatOccupations, getSeats, searchGuests, toggleGuestStatus } from "@/components/Database";
 import dynamic from "next/dynamic";
 import { Button, Divider, Input, Loading, Spacer, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
@@ -11,16 +11,11 @@ import Sidebar from "@/components/editor/Sidebar";
 import { makeStaticProps, getStaticPaths } from "@/lib/getStatic";
 import { SearchIcon } from "@/components/icons/SearchIcon";
 import { UserAddIcon } from "@/components/icons/UserAddIcon";
-import { latLngBounds, LatLngBounds } from 'leaflet';
+import { LatLngBounds } from 'leaflet';
 import { deleteSeat } from "@/components/Database";
 import { GuestTable } from "@/components/editor/GuestTable";
 import { GuestModal } from "@/components/editor/GuestModal";
-import { AnimatePresence, motion, useAnimation } from "framer-motion";
-
-interface ILayerColumn {
-  key: Key,
-  label: string
-}
+import { AnimatePresence } from "framer-motion";
 
 const getStaticProps = makeStaticProps(['common'])
 export { getStaticPaths, getStaticProps }
@@ -41,6 +36,9 @@ export default function Router() {
   const [seats, setSeats] = useState<ISeat[]>([])
   const [guests, setGuests] = useState<IGuest[]>([])
   const [layerId, setLayerId] = useState(1)
+
+  const [assignGuest, setAssignGuest] = useState<IGuest | undefined>(undefined)
+  const [occupations, setOccupations] = useState<ISeatOccupation[] | undefined>(undefined)
 
   const [seatEdit, setSeatEdit] = useState(false)
   const [guestEdit, setGuestEdit] = useState(false)
@@ -124,6 +122,22 @@ export default function Router() {
 
     addSeat(database, seat)
     setSeats((await getSeats(database, layerId))!)
+  }
+
+  async function startGuestOccupation(guest: IGuest) {
+    console.log("Start occupation for ", guest);
+    
+    setGuestEdit(false)
+    setAssignGuest(guest)
+    setOccupations(await getSeatOccupations(database!))
+  }
+
+  async function occupySeat(seatId: number, guest: IGuest) {
+    setGuestEdit(true)
+    setAssignGuest(undefined)
+    setOccupations(undefined)
+
+    assignSeat(database!, guest, seatId)
   }
 
   async function removeSeat(seatId: number) {
@@ -210,8 +224,11 @@ export default function Router() {
             mapWidth={mapWidth}
             enableSeatEdit={seatEdit}
             seats={seats}
+            assignGuest={assignGuest}
+            occupations={occupations}
             addNewSeat={addNewSeat}
             removeSeat={removeSeat}
+            occupySeat={occupySeat}
           />
 
           <GuestModal
@@ -254,7 +271,7 @@ export default function Router() {
                   db={database!}
                   guests={guests}
                   deleteGuest={removeGuest}
-                  newGuest={addNewGuest}
+                  startGuestOccupation={startGuestOccupation}
                   toggleGuest={toggleGuest}
                 />
               </Sidebar>

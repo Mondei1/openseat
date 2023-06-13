@@ -1,12 +1,12 @@
 import styles from './Map.module.css';
 import L from "leaflet";
-import { ImageOverlay, MapContainer, Marker, Rectangle, SVGOverlay, useMapEvents } from "react-leaflet";
+import { ImageOverlay, MapContainer, Marker, Rectangle, useMapEvents } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
 import { CRS, LatLng, latLng, latLngBounds, LatLngBounds } from 'leaflet';
 import { useState } from 'react';
-import { ISeat } from './Database';
+import { IGuest, ISeat, ISeatOccupation } from './Database';
 import { Dropdown } from '@nextui-org/react';
 import { DeleteIcon } from './icons/DeleteIcon';
 import { TFunction } from 'next-i18next';
@@ -15,7 +15,8 @@ import { UsersIcon } from './icons/UsersIcon';
 interface IMapSeat extends ISeat {
     bounds?: LatLngBounds,
     divIcon?: L.DivIcon,
-    textPosition?: LatLng
+    textPosition?: LatLng,
+    fillColor?: string
 }
 
 export type MapProps = {
@@ -25,15 +26,26 @@ export type MapProps = {
     mapHeight: number,
     enableSeatEdit?: boolean,
     seats: ISeat[],
+
+    /// Stores amount of needed occupation space
+    assignGuest?: IGuest,
+    occupations?: ISeatOccupation[],
+
     addNewSeat: (seat: LatLngBounds) => Promise<void>,
-    removeSeat: (seatId: number) => void
+    removeSeat: (seatId: number) => void,
+    occupySeat: (seatId: number, guest: IGuest) => void
 }
 
 type SeatViewerProps = {
     seats: ISeat[],
+    
+    /// Stores amount of needed occupation space
+    assignGuest?: IGuest,
+    occupations?: ISeatOccupation[],
+
     addNewSeat: (seat: LatLngBounds) => Promise<void>,
-    enableSeatEdit: boolean,
-    removeSeat: (seatId: number) => void
+    occupySeat: (seatId: number, guest: IGuest) => void,
+    enableSeatEdit: boolean
 }
 
 type SeatEditDropdownProps = {
@@ -48,11 +60,54 @@ type SeatDropdownProps = {
     seats: ISeat[]
 }
 
-const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, removeSeat, enableSeatEdit }) => {
+const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEdit, assignGuest, occupations, occupySeat }) => {
     const [initialPosition, setInitialPosition] = useState(latLng(0, 0))
     const [endPosition, setEndPosition] = useState(latLng(0, 0))
 
+    let mapSeats: IMapSeat[] = seats
+    mapSeats.map(x => {
+        x.bounds = latLngBounds([x.lat1, x.lng1], [x.lat2, x.lng2])
+        x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker", iconSize: L.point(128, 32) })
+
+        let textPosition = x.bounds.getCenter().clone()
+        textPosition.lng -= 0
+
+        x.textPosition = textPosition
+        x.fillColor = "#4BB2F2"
+        
+        if (assignGuest !== undefined && occupations !== undefined) {
+            // Occupation of this seat
+            let occupation = occupations.find(o => o.id == x.id)
+            if (occupation === undefined) {
+                return
+            }
+
+            if (occupation?.left < (assignGuest.additionalGuestAmount + 1)) {
+                x.fillColor = "#F23838"
+            }
+        }
+    })
+
     const map = useMapEvents({
+        click(e) {
+            if (assignGuest !== undefined && occupations !== undefined) {
+                const seat = getSeatAt(map, mapSeats, e.containerPoint)
+                let occupation = occupations.find(o => o.id == seat?.id)
+                if (occupation === undefined) {
+                    return
+                }
+
+                if (occupation?.left < (assignGuest.additionalGuestAmount + 1)) {
+                    return
+                }
+
+                if (seat === null) {
+                    return
+                }
+
+                occupySeat(seat.id, assignGuest)
+            }
+        },
         mousedown(e) {
             if (!enableSeatEdit) {
                 return
@@ -83,28 +138,15 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, removeSeat, 
             map.dragging.enable()
             addNewSeat(latLngBounds([initialPosition.lat, initialPosition.lng], [endPosition.lat, endPosition.lng]))
 
-            console.log("List:", seats);
-
             setInitialPosition(latLng(0, 0))
             setEndPosition(latLng(0, 0))
         }
     })
 
-    let mapSeats: IMapSeat[] = seats
-    mapSeats.map(x => {
-        x.bounds = latLngBounds([x.lat1, x.lng1], [x.lat2, x.lng2])
-        x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker", iconSize: L.point(128, 32) })
-
-        let textPosition = x.bounds.getCenter().clone()
-        textPosition.lng -= 0
-
-        x.textPosition = textPosition
-    })
-
     return <>
         {mapSeats.map(x => (
             <>
-                <Rectangle key={x.id.toString()} bounds={x.bounds!} fillOpacity={0.6}>
+                <Rectangle key={x.id.toString()} color={x.fillColor} bounds={x.bounds!} fillOpacity={0.6}>
                     <Marker position={x.textPosition!} icon={x.divIcon} />
                 </Rectangle>
             </>
@@ -182,6 +224,7 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, t, ...props }) => {
 
     return (<>
         <Dropdown isOpen={showContextMenu} onClose={() => setTargetSeat(null)}>
+            { /* @ts-ignore */}
             <Dropdown.Trigger style={{ position: "absolute", opacity: 0.5, zIndex: 999999, top: `${contextMenuCoords[1]}px`, left: `${contextMenuCoords[0]}px` }}>
                 <div></div>
             </Dropdown.Trigger>
@@ -236,6 +279,7 @@ const SeatEditDropdown: React.FC<SeatEditDropdownProps> = ({ seats, enableSeatEd
 
     return (<>
         <Dropdown isOpen={showContextMenu} onClose={() => setTargetSeat(null)}>
+            { /* @ts-ignore */}
             <Dropdown.Trigger style={{ position: "absolute", opacity: 0.5, zIndex: 999999, top: `${contextMenuCoords[1]}px`, left: `${contextMenuCoords[0]}px` }}>
                 <div></div>
             </Dropdown.Trigger>
@@ -263,6 +307,9 @@ export const Map: React.FC<MapProps> = ({
     mapWidth,
     enableSeatEdit,
     seats,
+    assignGuest,
+    occupySeat,
+    occupations,
     addNewSeat: setSeats,
     removeSeat,
     t,
@@ -302,7 +349,14 @@ export const Map: React.FC<MapProps> = ({
             <SeatDropdown t={t} seats={seats} />
             <SeatEditDropdown t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
 
-            <SeatViewer seats={seats} addNewSeat={setSeats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} mapUrl={mapUrl} />
+            <SeatViewer
+                seats={seats}
+                addNewSeat={setSeats}
+                enableSeatEdit={enableSeatEdit!}
+                occupySeat={occupySeat}
+                assignGuest={assignGuest}
+                occupations={occupations}
+            />
 
             <ImageOverlay
                 bounds={[[0.0, mapWidth], [mapHeight, 0.0]]}

@@ -12,12 +12,13 @@ import Database from "tauri-plugin-sql-api";
 import { CURRENT_DATABASE_VERSION, DatabaseInfoKey, IFloor, initDatabase } from "@/components/Database";
 import { makeStaticProps, getStaticPaths } from "@/lib/getStatic";
 import { LayerManager } from "@/components/LayerManager";
+import { getTranslatedPath } from "@/lib/redirect";
 
 const getStaticProps = makeStaticProps(['common'])
 export { getStaticPaths, getStaticProps }
 
 export default function Router() {
-  const { t } = useTranslation('common')
+  const { t, i18n } = useTranslation('common')
   const router = useRouter()
   const { databasePath } = router.query
 
@@ -42,11 +43,11 @@ export default function Router() {
 
     const db = await Database.load("sqlite:" + databasePath)
 
-    initDatabase(db, databaseName, schematics)
+    await initDatabase(db, databaseName, schematics)
 
     db.close()
     router.push({
-      pathname: "/editor",
+      pathname: getTranslatedPath("/editor", router.asPath, i18n),
       query: {
         databasePath
       }
