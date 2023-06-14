@@ -399,3 +399,18 @@ export async function assignSeat(db: Database, guest: IGuest, seatId: number) {
 
     }
 }
+
+export async function getGuestsOnSeat(db: Database, seatId: number): Promise<IGuest[]> {
+    try {
+        let rawResult: any[] = await db.select("SELECT * FROM participant WHERE seat_id = $1", [seatId])
+        if (rawResult === null || rawResult.length == 0) {
+            return []
+        }
+
+        return convertGuest(rawResult)
+    } catch (err) {
+        console.error(`Couldn't get guests at seat ${seatId}: ${err}`);
+        
+        return []
+    }
+}

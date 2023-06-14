@@ -6,11 +6,12 @@ import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility
 import "leaflet-defaulticon-compatibility";
 import { CRS, LatLng, latLng, latLngBounds, LatLngBounds } from 'leaflet';
 import { useState } from 'react';
-import { IGuest, ISeat, ISeatOccupation } from './Database';
+import { IGuest, ISeat, ISeatOccupation, getGuestsOnSeat } from './Database';
 import { Dropdown } from '@nextui-org/react';
 import { DeleteIcon } from './icons/DeleteIcon';
 import { TFunction } from 'next-i18next';
 import { UsersIcon } from './icons/UsersIcon';
+import Database from 'tauri-plugin-sql-api';
 
 interface IMapSeat extends ISeat {
     bounds?: LatLngBounds,
@@ -21,6 +22,7 @@ interface IMapSeat extends ISeat {
 
 export type MapProps = {
     t: TFunction,
+    db: Database,
     mapUrl: string,
     mapWidth: number,
     mapHeight: number,
@@ -38,7 +40,7 @@ export type MapProps = {
 
 type SeatViewerProps = {
     seats: ISeat[],
-    
+
     /// Stores amount of needed occupation space
     assignGuest?: IGuest,
     occupations?: ISeatOccupation[],
@@ -57,6 +59,8 @@ type SeatEditDropdownProps = {
 
 type SeatDropdownProps = {
     t: TFunction,
+    db: Database,
+    occupations?: ISeatOccupation[],
     seats: ISeat[]
 }
 
@@ -74,7 +78,7 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEd
 
         x.textPosition = textPosition
         x.fillColor = "#4BB2F2"
-        
+
         if (assignGuest !== undefined && occupations !== undefined) {
             // Occupation of this seat
             let occupation = occupations.find(o => o.id == x.id)
@@ -195,32 +199,51 @@ function getSeatAt(map: L.Map, mapSeats: IMapSeat[], point: L.Point) {
     return null
 }
 
-const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, t, ...props }) => {
+const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, ...props }) => {
     let [showContextMenu, setShowContextMenu] = useState(false)
     let [contextMenuCoords, setContextMenuCoords] = useState<number[]>([])
     let [targetSeat, setTargetSeat] = useState<IMapSeat | null>()
+    let [seatedGuests, setSeatedGuests] = useState<IGuest[] | null>(null)
 
     const map = useMapEvents({
         click(e) {
-            console.log(showContextMenu);
-            
-            if (showContextMenu) {
-                setShowContextMenu(false)
-                return
-            }
-            
             const mapSeats = convertToMapSeat(seats)
             setTargetSeat(getSeatAt(map, mapSeats, e.containerPoint))
-        
+
+            console.log(showContextMenu, targetSeat);
+
             // No seat found. Ignore.
             if (targetSeat === null) {
-                return
+                setShowContextMenu(false)
+                return (<></>)
             }
+
+            getGuestsOnSeat(db, targetSeat?.id!).then(g => {
+                if (g.length === 0) {
+                    setSeatedGuests(null)
+                    return
+                }
+        
+                setSeatedGuests(g)
+            })
 
             setContextMenuCoords([e.containerPoint.x, e.containerPoint.y])
             setShowContextMenu(true)
+
+            if (showContextMenu) {
+                setShowContextMenu(false)
+            }
         }
     })
+
+    if (occupations === undefined) {
+        return (<></>)
+    }
+
+    const thisSeat = occupations.find(x => x.id == targetSeat?.id)
+    if (thisSeat === undefined) {
+        return (<></>)
+    }
 
     return (<>
         <Dropdown isOpen={showContextMenu} onClose={() => setTargetSeat(null)}>
@@ -234,13 +257,20 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ seats, t, ...props }) => {
                 disabledKeys={["people"]}
                 onAction={(key) => {
                     if (key.toString() == "delete") {
-                        
+
                     }
                 }}
             >
                 <Dropdown.Item key="people" icon={<UsersIcon />}>
-                    {t("seats")}: 0 {t("of")} {targetSeat?.capacity}
+                    {t("seats")}: {thisSeat.occupied} {t("of")} {targetSeat?.capacity}
                 </Dropdown.Item>
+                {/*seatedGuests !== null &&
+                    seatedGuests.map(x => {
+                        <Dropdown.Item>
+                            { x.firstName } { x.lastName } + { x.additionalGuestAmount }
+                        </Dropdown.Item>
+                    })
+                */}
             </Dropdown.Menu>
         </Dropdown>
     </>)
@@ -266,7 +296,7 @@ const SeatEditDropdown: React.FC<SeatEditDropdownProps> = ({ seats, enableSeatEd
 
             const mapSeats = convertToMapSeat(seats)
             setTargetSeat(getSeatAt(map, mapSeats, e.containerPoint))
-        
+
             // No seat found. Ignore.
             if (targetSeat === null) {
                 return
@@ -313,6 +343,7 @@ export const Map: React.FC<MapProps> = ({
     addNewSeat: setSeats,
     removeSeat,
     t,
+    db,
     ...props
 }) => {
     mapWidth *= 0.7
@@ -333,6 +364,7 @@ export const Map: React.FC<MapProps> = ({
 
     return (
         <MapContainer
+            key="map"
             center={center}
             zoom={zoom}
             minZoom={0}
@@ -345,11 +377,12 @@ export const Map: React.FC<MapProps> = ({
             crs={CRS.Simple}
         >
 
-            <PreserveLocation />
-            <SeatDropdown t={t} seats={seats} />
-            <SeatEditDropdown t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
+            <PreserveLocation key="pl" />
+            <SeatDropdown key="sd" t={t} db={db} seats={seats} occupations={occupations} />
+            <SeatEditDropdown key="sed" t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
 
             <SeatViewer
+                key="sv"
                 seats={seats}
                 addNewSeat={setSeats}
                 enableSeatEdit={enableSeatEdit!}
@@ -359,6 +392,7 @@ export const Map: React.FC<MapProps> = ({
             />
 
             <ImageOverlay
+                key="io"
                 bounds={[[0.0, mapWidth], [mapHeight, 0.0]]}
                 opacity={enableSeatEdit ? 0.5 : 1}
                 url={mapUrl}>

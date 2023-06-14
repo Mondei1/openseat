@@ -69,17 +69,22 @@ export default function Home() {
   );
 
   useMemo(() => {
-    console.log("Config language has changed. Update path.");
+    console.log("Config language has changed. Update path to ", getTranslatedPath("/", router.asPath, i18n));
     
     if (i18n === undefined && typeof window === "undefined") {
       return
     }
 
     i18n.changeLanguage(settings.config.language)
-    console.log("Navigate to ", settings.config.language);
+
+    if (!router.isReady)  {
+      return
+    }
     
-    //getRedirect('')
-    //changeLanguage(settings.config.language)
+    router.push({
+      pathname: getTranslatedPath("/", router.asPath, i18n)
+    })
+
     setTheme(settings.config.theme)
   }, [settings.config])
 

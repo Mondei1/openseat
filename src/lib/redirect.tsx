@@ -19,7 +19,9 @@ export const useRedirect = (to: string | null) => {
     to = to || router.asPath
 
     useEffect(() => {
-    const detectedLng = settings.config.language
+    const detectedLng = "de"
+    console.log("Current languge: ", detectedLng);
+    
     if (to!.startsWith('/' + detectedLng) && router.route === '/404') { // prevent endless loop
         router.replace('/' + detectedLng + router.route)
         return

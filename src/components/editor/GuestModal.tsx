@@ -10,7 +10,7 @@ export type GuestModalProps = {
     visible: boolean,
     closeHandler: () => void,
     addGuest: (guest: IGuest) => void,
-    updateGuest: (guest: IGuest) => void,
+    //updateGuest: (guest: IGuest) => void,
     editGuest?: IGuest
 }
 

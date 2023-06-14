@@ -47,7 +47,8 @@
         "seat": "Seat",
         "click_to_checkin": "Click to check in guest",
         "click_to_checkout": "Click to check out guest",
-        "assign_seat": "Assign seat"
+        "assign_seat": "Assign seat",
+        "show_on_map": "Show on map"
     },
     "keys": {
         "del": "Del"

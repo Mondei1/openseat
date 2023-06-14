@@ -15,7 +15,7 @@ import { LatLngBounds } from 'leaflet';
 import { deleteSeat } from "@/components/Database";
 import { GuestTable } from "@/components/editor/GuestTable";
 import { GuestModal } from "@/components/editor/GuestModal";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 
 const getStaticProps = makeStaticProps(['common'])
 export { getStaticPaths, getStaticProps }
@@ -37,6 +37,7 @@ export default function Router() {
   const [guests, setGuests] = useState<IGuest[]>([])
   const [layerId, setLayerId] = useState(1)
 
+  const [guestSearch, setGuestSearch] = useState("")
   const [assignGuest, setAssignGuest] = useState<IGuest | undefined>(undefined)
   const [occupations, setOccupations] = useState<ISeatOccupation[] | undefined>(undefined)
 
@@ -70,11 +71,8 @@ export default function Router() {
       reader.onloadend = () => {
         let image = new Image()
         image.src = reader.result?.toString()!!
-        console.log("Load image ...");
 
         image.onload = async () => {
-          console.log("Width: ", image.width, " Height: ", image.height);
-
           setMapUrl(image.src)
           setMapWidth(image.width)
           setMapHeight(image.height)
@@ -83,19 +81,20 @@ export default function Router() {
           setMapState(true)
 
           setSeats((await getSeats(database!, layerId))!)
+          setOccupations(await getSeatOccupations(database!))
         }
       }
     }
   }, [layerId, database])
 
-  async function search(searchTerm: string) {
-    if (searchTerm.trim() === "") {
+  useMemo(async () => {
+    if (guestSearch.trim() === "") {
       setGuests(await getGuests(database!))
       return
     }
 
-    setGuests(await searchGuests(database!, searchTerm))
-  }
+    setGuests(await searchGuests(database!, guestSearch))
+  }, [guestSearch])
 
   async function addNewSeat(bounds: LatLngBounds) {
     if (database === null) return
@@ -124,20 +123,30 @@ export default function Router() {
     setSeats((await getSeats(database, layerId))!)
   }
 
+  /// Refreshs guests while respecting current search.
+  async function refreshGuests() {
+    if (guestSearch.trim() === "") {
+      setGuests((await getGuests(database!)))
+    } else {
+      setGuests(await searchGuests(database!, guestSearch))
+    }
+  }
+
   async function startGuestOccupation(guest: IGuest) {
-    console.log("Start occupation for ", guest);
-    
     setGuestEdit(false)
     setAssignGuest(guest)
     setOccupations(await getSeatOccupations(database!))
+    console.log(occupations);
   }
 
+  /// Later called by map after startGuestOccupation() has been called.
   async function occupySeat(seatId: number, guest: IGuest) {
+    await assignSeat(database!, guest, seatId)
+    
+    await refreshGuests()
     setGuestEdit(true)
     setAssignGuest(undefined)
-    setOccupations(undefined)
-
-    assignSeat(database!, guest, seatId)
+    setOccupations(await getSeatOccupations(database!))
   }
 
   async function removeSeat(seatId: number) {
@@ -151,14 +160,14 @@ export default function Router() {
     if (database === null) return
 
     addGuest(database, guest)
-    setGuests(await getGuests(database))
+    refreshGuests()
   }
 
   async function removeGuest(guestId: number) {
     if (database === null) return
 
     deleteGuest(database, guestId)
-    setGuests((await getGuests(database))!)
+    refreshGuests()
   }
 
   function back() {
@@ -168,7 +177,7 @@ export default function Router() {
   }
 
   async function editGuests() {
-    setGuests((await getGuests(database!)))
+    refreshGuests()
     setGuestEdit(!guestEdit)
   }
 
@@ -219,6 +228,7 @@ export default function Router() {
         {mapState && <>
           <Map
             t={t}
+            db={database!}
             mapUrl={mapUrl}
             mapHeight={mapHeight}
             mapWidth={mapWidth}
@@ -239,60 +249,64 @@ export default function Router() {
           />
 
           <AnimatePresence mode="wait">
-            {guestEdit &&
-              <Sidebar key={"guest-sidebar"}>
-                <div className="flex gap-4">
-                  <Input
-                    contentLeft={<SearchIcon />}
-                    bordered
-                    clearable
-                    width="100%"
-                    css={{ backgroundColor: "rgba(var(--background-rgb), 0.3)" }}
-                    onChange={(e) => { search(e.target.value) }}
-                    placeholder={t("map.search")!}
-                  />
-                  <Button
-                    bordered
-                    color={"gradient"}
-                    icon={<UserAddIcon />}
-                    shadow={hover}
-                    onMouseOver={() => { setHover(true) }}
-                    onMouseLeave={() => { setHover(false) }}
-                    onPress={() => setGuestModal(true)}
-                    auto
-                  >
-                    {t("map.new_guest")}
-                  </Button>
-                </div>
-
-                <Spacer y={1} />
-
-                <GuestTable
-                  db={database!}
-                  guests={guests}
-                  deleteGuest={removeGuest}
-                  startGuestOccupation={startGuestOccupation}
-                  toggleGuest={toggleGuest}
+            <Sidebar key={"guest-sidebar"} show={guestEdit}>
+              <div className="flex gap-4">
+                <Input
+                  contentLeft={<SearchIcon />}
+                  bordered
+                  clearable
+                  width="100%"
+                  css={{ backgroundColor: "rgba(var(--background-rgb), 0.3)" }}
+                  onChange={(e) => { setGuestSearch(e.target.value) }}
+                  placeholder={t("map.search")!}
                 />
-              </Sidebar>
+                <Button
+                  bordered
+                  color={"gradient"}
+                  icon={<UserAddIcon />}
+                  shadow={hover}
+                  onMouseOver={() => { setHover(true) }}
+                  onMouseLeave={() => { setHover(false) }}
+                  onPress={() => setGuestModal(true)}
+                  auto
+                >
+                  {t("map.new_guest")}
+                </Button>
+              </div>
+
+              <Spacer y={1} />
+
+              <GuestTable
+                db={database!}
+                guests={guests}
+                deleteGuest={removeGuest}
+                startGuestOccupation={startGuestOccupation}
+                toggleGuest={toggleGuest}
+              />
+            </Sidebar>
+            {seatEdit && <>
+              <motion.div
+                className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode"
+                key="edit-bar"
+                animate={{ y: 0, opacity: 1 }}
+                initial={{ y: 100, opacity: 0 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: "tween", ease: [0.33, 1, 0.68, 1] }}
+              >
+                <EditIcon />
+                <Text h3 className="m-0">{t("map.edit_mode")}</Text>
+                <Spacer x={.5} />
+                <Input
+                  value={defaultCapacity}
+                  onChange={e => setDefaultCapacity(Number.parseInt(e.target.value))}
+                  width="9rem"
+                  label={t("map.default_seat_capacity")!}
+                  type="number"
+                />
+              </motion.div>
+            </>
             }
           </AnimatePresence>
-
-          {seatEdit && <>
-            <div className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode">
-              <EditIcon />
-              <Text h3 className="m-0">{t("map.edit_mode")}</Text>
-              <Spacer x={.5} />
-              <Input
-                value={defaultCapacity}
-                onChange={e => setDefaultCapacity(Number.parseInt(e.target.value))}
-                width="9rem"
-                label={t("map.default_seat_capacity")!}
-                type="number"
-              />
-            </div>
-          </>
-          }
         </>}
         {!mapState && <>
           <div className="flex w-full h-full justify-center ">

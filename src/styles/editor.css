@@ -26,8 +26,6 @@
 }
 
 .map-edit-mode {
-    animation: edit-begin .3s;
-    animation-timing-function: cubic-bezier(0.85, 0, 0.15, 1);
     border-top-right-radius: 12px;
     background-color: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(10px);

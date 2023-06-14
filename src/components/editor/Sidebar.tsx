@@ -1,17 +1,17 @@
-import { Text } from "@nextui-org/react";
-import { AnimatePresence, motion, useAnimation } from "framer-motion";
+import { motion, useAnimate } from "framer-motion";
 import { useEffect } from "react";
 
 // @ts-ignore
-export default function Sidebar({ children }) {
-    const controls = useAnimation();
+export default function Sidebar({ children, show }) {
+    const [scope, animate] = useAnimate()
 
     const variants = {
         out: {
-            opacity: 0,
-            x: 200,
+            opacity: 1,
+            x: 700,
             scale: 0.9,
             transition: {
+                type: "tween",
                 duration: 0.25,
                 ease: [0.22, 1, 0.36, 1]
             }
@@ -21,6 +21,7 @@ export default function Sidebar({ children }) {
             x: 0,
             scale: 1,
             transition: {
+                type: "tween",
                 duration: 0.25,
                 ease: [0.22, 1, 0.36, 1]
             }
@@ -28,11 +29,20 @@ export default function Sidebar({ children }) {
     }
 
     useEffect(() => {
-        controls.start("in")
-    }, [controls])
+        if (show) {
+            // @ts-ignore
+            animate(scope.current, variants.in, variants.in.transition)
+        } else {
+            // @ts-ignore
+            animate(scope.current, variants.out, variants.out.transition)
+        }
 
-    return (<>
+        // controls.start("in")
+    }, [show])
+
+    return (
         <motion.div
+            ref={scope}
             className="absolute h-max m-1 p-4 sidebar fade-in"
             key="sidebar"
             variants={variants}
@@ -41,7 +51,5 @@ export default function Sidebar({ children }) {
             exit="out"
         >
             {children}
-        </motion.div>
-
-    </>)
+        </motion.div>)
 }

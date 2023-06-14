@@ -9,6 +9,7 @@ import Database from "tauri-plugin-sql-api"
 import { MinusIcon } from "../icons/MinusIcon"
 import { PlusIcon } from "../icons/PlusIcon"
 import { ChairIcon } from "../icons/ChairIcon"
+import { LocateIcon } from "../icons/LocateIcon"
 
 interface ISchematicColumn {
     key: Key,
@@ -92,7 +93,7 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                         <User
                             squared
                             text={guest.firstName}
-                            name={`${guest.firstName} ${guest.lastName} (${guest.id})`}
+                            name={`${guest.firstName} ${guest.lastName}`}
                             color={guest.checkedIn ? "success" : "default"}
                             bordered
                             zoomed
@@ -113,10 +114,10 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                             </IconButton>
                         </Tooltip>
                         <Tooltip
-                            content={t("edit")}
+                            content={t("map.show_on_map")}
                         >
                             <IconButton>
-                                <EditIcon size={20} />
+                                <LocateIcon size={20} />
                             </IconButton>
                         </Tooltip>
                         <Tooltip

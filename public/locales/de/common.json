@@ -47,7 +47,8 @@
         "seat": "Sitz",
         "click_to_checkin": "Klicke um Gast einzuchecken",
         "click_to_checkout": "Klicke um Gast auszuchecken",
-        "assign_seat": "Sitzplatz zuweisen"
+        "assign_seat": "Sitzplatz zuweisen",
+        "show_on_map": "Auf der Karte zeigen"
     },
     "keys": {
         "del": "Entf"
