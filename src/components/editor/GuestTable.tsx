@@ -1,7 +1,7 @@
 import { Avatar, Button, Col, Input, Loading, Row, Spacer, Table, Text, Tooltip, User, useAsyncList } from "@nextui-org/react"
 import React, { Key, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { IGuest, getGuests, getSeatOccupations } from "../Database"
+import { IGuest, getGuests, getSeatOccupations, updateGuestCheckedIn } from "../Database"
 import { IconButton } from "../IconButton"
 import { DeleteIcon } from "../icons/DeleteIcon"
 import { EditIcon } from "../icons/EditIcon"
@@ -21,11 +21,13 @@ type GuestTableProps = {
     db: Database,
     guests: IGuest[],
     deleteGuest: (guestId: number) => void,
+    updateGuests: () => void,
     toggleGuest: (guestId: number) => void,
-    startGuestOccupation: (guest: IGuest) => void
+    startGuestOccupation: (guest: IGuest) => void,
+    focusSeat: (seatId: number) => void
 }
 
-export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest, startGuestOccupation, toggleGuest }) => {
+export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest, startGuestOccupation, toggleGuest, focusSeat, updateGuests }) => {
     const { t } = useTranslation('common')
 
     const [filteredGuests, setFilteredGuests] = useState<IGuest[]>([])
@@ -65,7 +67,14 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                 return (<Text>{guest.additionalGuestAmount}</Text>)
             case "present":
                 return (<div className="flex gap-2">
-                    <IconButton>
+                    <IconButton onClick={() => {
+                        if (guest.additionalGuestCheckedin == 0) {
+                            return
+                        }
+
+                        updateGuestCheckedIn(db, guest.id!, guest.additionalGuestCheckedin - 1)
+                        updateGuests()
+                    }}>
                         <MinusIcon
                             // @ts-ignore: Color props exists but I'm lazy.
                             color={guest.additionalGuestCheckedin == 0 ? "gray" : "white"}
@@ -74,7 +83,14 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                         />
                     </IconButton>
                     <Text>{guest.additionalGuestCheckedin}</Text>
-                    <IconButton>
+                    <IconButton onClick={() => {
+                        if ((guest.additionalGuestCheckedin + 1) > guest.additionalGuestAmount) {
+                            return
+                        }
+                        
+                        updateGuestCheckedIn(db, guest.id!, guest.additionalGuestCheckedin + 1)
+                        updateGuests()
+                    }}>
                         <PlusIcon
                             // @ts-ignore: Color props exists but I'm lazy.
                             color={(guest.additionalGuestCheckedin + 1) > guest.additionalGuestAmount ? "gray" : "white"}
@@ -116,8 +132,9 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                         <Tooltip
                             content={t("map.show_on_map")}
                         >
-                            <IconButton>
-                                <LocateIcon size={20} />
+                            <IconButton onClick={() => { if (guest.seatId !== null) focusSeat(guest.seatId!)}}>
+                                {/* @ts-ignore */}
+                                <LocateIcon color={guest.seatId === null ? "gray" : ""} size={20} />
                             </IconButton>
                         </Tooltip>
                         <Tooltip

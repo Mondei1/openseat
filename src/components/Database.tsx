@@ -332,6 +332,16 @@ export async function toggleGuestStatus(db: Database, guestId: number) {
     }
 }
 
+export async function updateGuestCheckedIn(db: Database, guestId: number, guestsCheckedIn: number) {
+    try {
+        await db.execute(`UPDATE participant SET guests_checkedin = $1 WHERE id = $2`, [guestsCheckedIn, guestId])
+        console.log("Update");
+        
+    } catch (err) {
+        console.error(`Failed to change checked in guests of guest ${guestId}: ${err}`);
+    }
+}
+
 /**
  * Find a list of seats that are assignable.
  * @returns Array of seat ids where target guest can be assgined to.
@@ -348,20 +358,18 @@ export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[
 
         // Id seen at index
         let indexed = new Map<number, { capacity: number, left: number, guests: number[] | null }>()
-
-        console.time("db")
-
-        // Copy results into mapü
+        // Copy results into map
         for (let i = 0; i < queryResult.length; i++) {
             const x = queryResult[i];
+
             if (indexed.has(x.s_id)) {
                 let table = indexed.get(x.s_id)!
                 table.left -= x.guests_amount + 1
 
-                if (table.guests === null ) {
+                if (table.guests === null) {
                     table.guests = [x.u_id]
                 } else {
-                    table.guests.push(x.u_ui)
+                    table.guests.push(x.u_id)
                 }
 
                 indexed.set(x.s_id, table)
@@ -370,11 +378,10 @@ export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[
 
             indexed.set(x.s_id, {
                 capacity: x.capacity,
-                left: x.capacity - (x.guests_amount + 1),
-                guests: null
+                left: x.capacity - (x.u_id === null ? 0 : (x.guests_amount + 1)),
+                guests: x.u_id === null ? null : [x.u_id]
             })
         }
-        console.timeEnd("db")
         let result: ISeatOccupation[] = []
         
         // Map to array

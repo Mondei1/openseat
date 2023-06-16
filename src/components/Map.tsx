@@ -64,7 +64,8 @@ type SeatDropdownProps = {
     t: TFunction,
     db: Database,
     occupations?: ISeatOccupation[],
-    seats: ISeat[]
+    seats: ISeat[],
+    guests: IGuest[]
 }
 
 const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEdit, assignGuest, occupations, occupySeat }) => {
@@ -200,45 +201,61 @@ function getSeatAt(map: L.Map, mapSeats: IMapSeat[], point: L.Point) {
     return null
 }
 
-const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, ...props }) => {
+const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, guests, occupations, ...props }) => {
     let [showContextMenu, setShowContextMenu] = useState(false)
     let [contextMenuCoords, setContextMenuCoords] = useState<number[]>([])
     let [targetSeat, setTargetSeat] = useState<IMapSeat | null>()
-
-    // If we click on a seat, we store guests sitting at target seat here.
-    let { data } = useAsync({ promiseFn: async () => {
-        let g = occupations?.find(x => x.id == targetSeat)?.guests
-
-        // Fake guest to display total occupation in dropdown.
-        g.push({
-            id: -1,
-            additionalGuestAmount: 0,
-            additionalGuestCheckedin: 0,
-            checkedIn: false,
-            firstName: "",
-            lastName: ""
-        })
-    }})
+    let [seatedGuests, setSeatedGuests] = useState<IGuest[] | null>(null)
 
     const map = useMapEvents({
         click(e) {
-            const mapSeats = convertToMapSeat(seats)
-            setTargetSeat(getSeatAt(map, mapSeats, e.containerPoint))
+            setShowContextMenu(false)
 
-            console.log(showContextMenu, targetSeat);
+            // Fake guest to display total occupation in dropdown.
+            const fakeGuest: IGuest = {
+                id: -1,
+                additionalGuestAmount: 0,
+                additionalGuestCheckedin: 0,
+                checkedIn: false,
+                firstName: "",
+                lastName: ""
+            }
+
+            const mapSeats = convertToMapSeat(seats)
+            const localTargetSeat = getSeatAt(map, mapSeats, e.containerPoint)
 
             // No seat found. Ignore.
-            if (targetSeat === null) {
-                setShowContextMenu(false)
+            if (localTargetSeat === null || localTargetSeat === undefined) {
+                console.log("No valid seat clicked ", getSeatAt(map, mapSeats, e.containerPoint), " ", localTargetSeat);
+                
                 return (<></>)
+            }
+
+            let occupation = occupations?.find(x => x.id == localTargetSeat!.id)?.guests                       
+            if (occupation === null || occupation === undefined) {
+                setSeatedGuests([fakeGuest])
+            } else {
+                let guestsAtSeat: IGuest[] = []
+                
+                for (let i = 0; i < occupation.length; i++) {
+                    const guestId = occupation[i]
+                    const guest = guests.find(x => x.id === guestId)
+
+                    if (guest === undefined) {
+                        continue
+                    }
+
+                    guestsAtSeat.push(guest)
+                }
+
+                guestsAtSeat.push(fakeGuest)
+                
+                setSeatedGuests(guestsAtSeat)
             }
 
             setContextMenuCoords([e.containerPoint.x, e.containerPoint.y])
             setShowContextMenu(true)
-
-            if (showContextMenu) {
-                setShowContextMenu(false)
-            }
+            setTargetSeat(localTargetSeat)
         }
     })
 
@@ -260,8 +277,8 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, 
             <Dropdown.Menu
                 variant="light"
                 aria-label="Actions"
-                disabledKeys={["people", "loading"]}
-                items={data || []}
+                disabledKeys={["people"]}
+                items={seatedGuests || []}
                 onAction={(key) => {
                     if (key.toString() == "delete") {
 
@@ -270,7 +287,7 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, 
             >
                 {(item: any) =>
                     item.id === -1 ?
-                        <Dropdown.Item key="people" icon={<UsersIcon />} withDivider={data!.length > 1}>
+                        <Dropdown.Item key="people" icon={<UsersIcon />} withDivider={seatedGuests!.length > 1}>
                             {t("seats")}: {thisSeat.occupied} {t("of")} {targetSeat?.capacity}
                         </Dropdown.Item> :
                         <Dropdown.Item key={"i" + item.id}>
@@ -297,8 +314,6 @@ const SeatEditDropdown: React.FC<SeatEditDropdownProps> = ({ seats, enableSeatEd
             if (!enableSeatEdit) {
                 return
             }
-
-            console.log("Open context menu at: ", e.containerPoint)
 
             const mapSeats = convertToMapSeat(seats)
             setTargetSeat(getSeatAt(map, mapSeats, e.containerPoint))
@@ -343,6 +358,7 @@ export const Map: React.FC<MapProps> = ({
     mapWidth,
     enableSeatEdit,
     seats,
+    guests,
     assignGuest,
     occupySeat,
     occupations,
@@ -357,10 +373,6 @@ export const Map: React.FC<MapProps> = ({
 
     let bounds = latLngBounds([0.0, mapWidth], [mapHeight, 0.0])
     let center = bounds.getCenter()
-
-    if (typeof window === 'undefined') {
-        return (<></>);
-    }
 
     let lastPos = sessionStorage.getItem("center")
     if (lastPos !== null) {
@@ -384,7 +396,7 @@ export const Map: React.FC<MapProps> = ({
         >
 
             <PreserveLocation key="pl" />
-            <SeatDropdown key="sd" t={t} db={db} seats={seats} occupations={occupations} />
+            <SeatDropdown guests={guests} key="sd" t={t} db={db} seats={seats} occupations={occupations} />
             <SeatEditDropdown key="sed" t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
 
             <SeatViewer

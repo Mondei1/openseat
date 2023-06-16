@@ -16,6 +16,7 @@ import { deleteSeat } from "@/components/Database";
 import { GuestTable } from "@/components/editor/GuestTable";
 import { GuestModal } from "@/components/editor/GuestModal";
 import { AnimatePresence, motion } from "framer-motion";
+import { ChairIcon } from "@/components/icons/ChairIcon";
 
 const getStaticProps = makeStaticProps(['common'])
 export { getStaticPaths, getStaticProps }
@@ -138,10 +139,24 @@ export default function Router() {
     setOccupations(await getSeatOccupations(database!))
   }
 
+  async function focusSeat(seatId: number) {
+    const targetSeat = seats.find(x => x.id === seatId)
+    console.log("Focus ", targetSeat);
+    
+    if (targetSeat === undefined) {
+      return
+    }
+
+    // We need to switch current layer because seat is somewhere else.
+    if (targetSeat.floor_id !== layerId) {
+      setLayerId(targetSeat.floor_id)
+    }
+  }
+
   /// Later called by map after startGuestOccupation() has been called.
   async function occupySeat(seatId: number, guest: IGuest) {
     await assignSeat(database!, guest, seatId)
-    
+
     await refreshGuests()
     setGuestEdit(true)
     setAssignGuest(undefined)
@@ -196,13 +211,11 @@ export default function Router() {
   }
 
   useEffect(() => {
-    loadDatabase().then(() => {
-      setTimeout(async () => {
-        console.log("Set layer id after db init");
+    loadDatabase().then(async () => {
+      console.log("Set layer id after db init");
 
-        setLayerId(1)
-        setGuests((await getGuests(database!))!)
-      })
+      setLayerId(1)
+      setGuests((await getGuests(database!))!)
     })
   }, [])
 
@@ -280,10 +293,13 @@ export default function Router() {
                 db={database!}
                 guests={guests}
                 deleteGuest={removeGuest}
+                updateGuests={refreshGuests}
                 startGuestOccupation={startGuestOccupation}
                 toggleGuest={toggleGuest}
+                focusSeat={focusSeat}
               />
             </Sidebar>
+
             {seatEdit && <>
               <motion.div
                 className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode"
@@ -306,8 +322,26 @@ export default function Router() {
               </motion.div>
             </>
             }
+
+            {assignGuest !== undefined && <>
+              <motion.div
+                className="flex gap-2 absolute bottom-0 left-0 p-2 pr-5 pl-5 z-20 items-center map-edit-mode"
+                key="assign-bar"
+                animate={{ y: 0, opacity: 1 }}
+                initial={{ y: 100, opacity: 0 }}
+                exit={{ y: 100, opacity: 0 }}
+                transition={{ type: "tween", ease: [0.33, 1, 0.68, 1] }}
+              >
+                <ChairIcon />
+                <Text h3 className="m-0">{t("map.assign")}</Text>
+                <Spacer x={.5} />
+                <Text>{ assignGuest.firstName } { assignGuest.lastName }</Text>
+              </motion.div>
+            </>
+            }
           </AnimatePresence>
         </>}
+
         {!mapState && <>
           <div className="flex w-full h-full justify-center ">
           </div>

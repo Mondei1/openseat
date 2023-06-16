@@ -48,6 +48,7 @@
         "click_to_checkin": "Click to check in guest",
         "click_to_checkout": "Click to check out guest",
         "assign_seat": "Assign seat",
+        "assign": "Allocation",
         "show_on_map": "Show on map"
     },
     "keys": {
