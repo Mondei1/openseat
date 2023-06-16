@@ -136,7 +136,6 @@ export default function Router() {
     setGuestEdit(false)
     setAssignGuest(guest)
     setOccupations(await getSeatOccupations(database!))
-    console.log(occupations);
   }
 
   /// Later called by map after startGuestOccupation() has been called.
@@ -234,6 +233,7 @@ export default function Router() {
             mapWidth={mapWidth}
             enableSeatEdit={seatEdit}
             seats={seats}
+            guests={guests}
             assignGuest={assignGuest}
             occupations={occupations}
             addNewSeat={addNewSeat}

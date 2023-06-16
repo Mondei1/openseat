@@ -12,12 +12,14 @@ import { DeleteIcon } from './icons/DeleteIcon';
 import { TFunction } from 'next-i18next';
 import { UsersIcon } from './icons/UsersIcon';
 import Database from 'tauri-plugin-sql-api';
+import { useAsync } from 'react-async';
 
 interface IMapSeat extends ISeat {
     bounds?: LatLngBounds,
     divIcon?: L.DivIcon,
     textPosition?: LatLng,
-    fillColor?: string
+    fillColor?: string,
+    occupation?: ISeatOccupation
 }
 
 export type MapProps = {
@@ -28,6 +30,7 @@ export type MapProps = {
     mapHeight: number,
     enableSeatEdit?: boolean,
     seats: ISeat[],
+    guests: IGuest[],
 
     /// Stores amount of needed occupation space
     assignGuest?: IGuest,
@@ -71,7 +74,6 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEd
     let mapSeats: IMapSeat[] = seats
     mapSeats.map(x => {
         x.bounds = latLngBounds([x.lat1, x.lng1], [x.lat2, x.lng2])
-        x.divIcon = L.divIcon({ html: "Sitz " + x.name, className: "map-marker", iconSize: L.point(128, 32) })
 
         let textPosition = x.bounds.getCenter().clone()
         textPosition.lng -= 0
@@ -79,14 +81,17 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEd
         x.textPosition = textPosition
         x.fillColor = "#4BB2F2"
 
+        if (occupations !== undefined) {
+            let occupation = occupations.find(o => o.id == x.id)
+            x.occupation = occupation
+            x.divIcon = L.divIcon({ html: `<p>Sitz ${x.name}</p><br /><small>${x.occupation!.left} Plätze frei</small>`, className: "map-marker", iconSize: L.point(128, 32) })
+        } else {
+            x.divIcon = L.divIcon({ html: `<p>Sitz ${x.name}</p>`, className: "map-marker", iconSize: L.point(128, 32) })
+        }
+
         if (assignGuest !== undefined && occupations !== undefined) {
             // Occupation of this seat
-            let occupation = occupations.find(o => o.id == x.id)
-            if (occupation === undefined) {
-                return
-            }
-
-            if (occupation?.left < (assignGuest.additionalGuestAmount + 1)) {
+            if (x.occupation!.left < (assignGuest.additionalGuestAmount + 1)) {
                 x.fillColor = "#F23838"
             }
         }
@@ -96,16 +101,12 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEd
         click(e) {
             if (assignGuest !== undefined && occupations !== undefined) {
                 const seat = getSeatAt(map, mapSeats, e.containerPoint)
-                let occupation = occupations.find(o => o.id == seat?.id)
-                if (occupation === undefined) {
-                    return
-                }
-
-                if (occupation?.left < (assignGuest.additionalGuestAmount + 1)) {
-                    return
-                }
 
                 if (seat === null) {
+                    return
+                }
+
+                if (seat.occupation?.left! < (assignGuest.additionalGuestAmount + 1)) {
                     return
                 }
 
@@ -203,7 +204,21 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, 
     let [showContextMenu, setShowContextMenu] = useState(false)
     let [contextMenuCoords, setContextMenuCoords] = useState<number[]>([])
     let [targetSeat, setTargetSeat] = useState<IMapSeat | null>()
-    let [seatedGuests, setSeatedGuests] = useState<IGuest[] | null>(null)
+
+    // If we click on a seat, we store guests sitting at target seat here.
+    let { data } = useAsync({ promiseFn: async () => {
+        let g = occupations?.find(x => x.id == targetSeat)?.guests
+
+        // Fake guest to display total occupation in dropdown.
+        g.push({
+            id: -1,
+            additionalGuestAmount: 0,
+            additionalGuestCheckedin: 0,
+            checkedIn: false,
+            firstName: "",
+            lastName: ""
+        })
+    }})
 
     const map = useMapEvents({
         click(e) {
@@ -217,15 +232,6 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, 
                 setShowContextMenu(false)
                 return (<></>)
             }
-
-            getGuestsOnSeat(db, targetSeat?.id!).then(g => {
-                if (g.length === 0) {
-                    setSeatedGuests(null)
-                    return
-                }
-        
-                setSeatedGuests(g)
-            })
 
             setContextMenuCoords([e.containerPoint.x, e.containerPoint.y])
             setShowContextMenu(true)
@@ -254,23 +260,23 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, occupations, 
             <Dropdown.Menu
                 variant="light"
                 aria-label="Actions"
-                disabledKeys={["people"]}
+                disabledKeys={["people", "loading"]}
+                items={data || []}
                 onAction={(key) => {
                     if (key.toString() == "delete") {
 
                     }
                 }}
             >
-                <Dropdown.Item key="people" icon={<UsersIcon />}>
-                    {t("seats")}: {thisSeat.occupied} {t("of")} {targetSeat?.capacity}
-                </Dropdown.Item>
-                {/*seatedGuests !== null &&
-                    seatedGuests.map(x => {
-                        <Dropdown.Item>
-                            { x.firstName } { x.lastName } + { x.additionalGuestAmount }
+                {(item: any) =>
+                    item.id === -1 ?
+                        <Dropdown.Item key="people" icon={<UsersIcon />} withDivider={data!.length > 1}>
+                            {t("seats")}: {thisSeat.occupied} {t("of")} {targetSeat?.capacity}
+                        </Dropdown.Item> :
+                        <Dropdown.Item key={"i" + item.id}>
+                            {item.firstName} {item.lastName} + {item.additionalGuestAmount}
                         </Dropdown.Item>
-                    })
-                */}
+                }
             </Dropdown.Menu>
         </Dropdown>
     </>)

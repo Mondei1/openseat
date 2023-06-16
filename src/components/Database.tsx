@@ -41,7 +41,10 @@ export interface ISeat {
 export interface ISeatOccupation {
     id: number,
     occupied: number,
-    left: number
+    left: number,
+
+    /// Guests IDs
+    guests: number[] | null
 }
 
 export async function initDatabase(db: Database, databaseName: string, schematics: IFloor[]): Promise<boolean> {
@@ -336,38 +339,53 @@ export async function toggleGuestStatus(db: Database, guestId: number) {
 export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[]> {
     try {
         let queryResult: any[] = await db.select(`SELECT
-        s.id,
-        s.capacity,
-        (CASE WHEN p.id IS NULL THEN s.capacity ELSE s.capacity - (p.guests_amount + 1) END) AS \`left\`
+            s.id AS s_id,
+            p.id AS u_id,
+            s.capacity,
+            p.guests_amount
         FROM seat AS s
         LEFT JOIN participant AS p ON p.seat_id = s.id`)
 
         // Id seen at index
-        let seenIds = new Map<number, number>()
+        let indexed = new Map<number, { capacity: number, left: number, guests: number[] | null }>()
 
-        queryResult = queryResult.filter((x, i) => {
-            if (seenIds.has(x.id)) {
-                let seenIndex = seenIds.get(x.id)!
-                queryResult[seenIndex].left -= x.left
+        console.time("db")
 
-                return false
+        // Copy results into mapü
+        for (let i = 0; i < queryResult.length; i++) {
+            const x = queryResult[i];
+            if (indexed.has(x.s_id)) {
+                let table = indexed.get(x.s_id)!
+                table.left -= x.guests_amount + 1
+
+                if (table.guests === null ) {
+                    table.guests = [x.u_id]
+                } else {
+                    table.guests.push(x.u_ui)
+                }
+
+                indexed.set(x.s_id, table)
+                continue
             }
 
-            seenIds.set(x.id, i)
-            return true
-        })
-
-        let result: ISeatOccupation[] = []
-        
-        for (let i = 0; i < queryResult.length; i++) {
-            const element = queryResult[i];
-            
-            result.push({
-                id: element.id,
-                left: element.left,
-                occupied: element.capacity - element.left
+            indexed.set(x.s_id, {
+                capacity: x.capacity,
+                left: x.capacity - (x.guests_amount + 1),
+                guests: null
             })
         }
+        console.timeEnd("db")
+        let result: ISeatOccupation[] = []
+        
+        // Map to array
+        for (const [key, value] of indexed.entries()) {            
+            result.push({
+                id: key,
+                left: value.left,
+                occupied: value.capacity - value.left,
+                guests: value.guests
+            })
+        }        
         
         return result
     } catch (err) {
