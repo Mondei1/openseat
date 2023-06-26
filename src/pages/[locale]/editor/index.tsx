@@ -2,7 +2,7 @@ import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { Key, useEffect, useMemo, useState } from "react";
 import Database from "tauri-plugin-sql-api";
-import { IGuest, ISeat, ISeatOccupation, addGuest, addSeat, assignSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeatOccupations, getSeats, searchGuests, toggleGuestStatus } from "@/components/Database";
+import { IGuest, ISeat, ISeatOccupation, addGuest, addSeat, assignSeat, deleteGuest, getFloorImage, getFloors, getGuests, getHighestSeatId, getSeatById, getSeatOccupations, getSeats, searchGuests, toggleGuestStatus } from "@/components/Database";
 import dynamic from "next/dynamic";
 import { Button, Divider, Input, Loading, Spacer, Text } from "@nextui-org/react";
 import { EditorNavbar } from "@/components/editor/Navbar";
@@ -37,6 +37,7 @@ export default function Router() {
   const [seats, setSeats] = useState<ISeat[]>([])
   const [guests, setGuests] = useState<IGuest[]>([])
   const [layerId, setLayerId] = useState(1)
+  const [focusSeat, setFocusSeat] = useState<ISeat | undefined>(undefined)
 
   const [guestSearch, setGuestSearch] = useState("")
   const [assignGuest, setAssignGuest] = useState<IGuest | undefined>(undefined)
@@ -63,6 +64,14 @@ export default function Router() {
     if (floors === null) return;
 
     if (floors.length > 0) {
+      console.log("Layer ", layerId);
+      
+      if (layerId === undefined) {
+        return
+      }
+
+      console.log("Search for floor ", layerId, " in ", floors);
+      
       let image = await getFloorImage(database, floors[layerId - 1].id);
 
       if (image === null) return;
@@ -139,18 +148,24 @@ export default function Router() {
     setOccupations(await getSeatOccupations(database!))
   }
 
-  async function focusSeat(seatId: number) {
-    const targetSeat = seats.find(x => x.id === seatId)
+  async function focusSeatFunc(seatId: number) {
+    const targetSeat = await getSeatById(database!, seatId)
     console.log("Focus ", targetSeat);
     
-    if (targetSeat === undefined) {
+    if (targetSeat === null) {
       return
     }
 
     // We need to switch current layer because seat is somewhere else.
     if (targetSeat.floor_id !== layerId) {
+      console.log("Set layer id to ", targetSeat.floor_id, targetSeat);
+      
       setLayerId(targetSeat.floor_id)
     }
+
+    setTimeout(() => {
+      setFocusSeat(seats.find(x => x.id === seatId))
+    }, 50)
   }
 
   /// Later called by map after startGuestOccupation() has been called.
@@ -252,6 +267,7 @@ export default function Router() {
             addNewSeat={addNewSeat}
             removeSeat={removeSeat}
             occupySeat={occupySeat}
+            focusSeat={focusSeat}
           />
 
           <GuestModal
@@ -296,7 +312,7 @@ export default function Router() {
                 updateGuests={refreshGuests}
                 startGuestOccupation={startGuestOccupation}
                 toggleGuest={toggleGuest}
-                focusSeat={focusSeat}
+                focusSeat={focusSeatFunc}
               />
             </Sidebar>
 

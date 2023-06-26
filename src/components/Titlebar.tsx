@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import clsx from 'clsx';
 import { SettingsContext } from './SettingsContext';
 import { Text } from '@nextui-org/react';
+import { AppIcon } from './icons/AppIcon';
 
 export default function Titlebar() {
   const [appWindow, setAppWindow] = useState<WebviewWindow>()
@@ -45,7 +46,14 @@ export default function Titlebar() {
 
   return (
     <>
-      { transparent && <Text small className="titlebar-credit"><b>OpenSeat</b> - pre-v1.0</Text> }
+      {transparent &&
+        <div className="titlebar-credit">
+          <AppIcon width={18} height={18} dark={true} />
+          <Text className='text' small>
+            <b>OpenSeat</b> - pre-v1.0
+          </Text>
+        </div>
+      }
       <div data-tauri-drag-region className={clsx('titlebar', transparent ? 'titlebar-transparent' : null)}>
         <button className="titlebar-button" onClick={minimize}>
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M6.975 21q-.425 0-.7-.288T6 20q0-.425.288-.713T7 19h10.025q.425 0 .7.288T18 20q0 .425-.288.713T17 21H6.975Z" /></svg>

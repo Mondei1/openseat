@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility/dist/leaflet-defaulticon-compatibility.css";
 import "leaflet-defaulticon-compatibility";
 import { CRS, LatLng, latLng, latLngBounds, LatLngBounds } from 'leaflet';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { IGuest, ISeat, ISeatOccupation, getGuestsOnSeat } from './Database';
 import { Dropdown } from '@nextui-org/react';
 import { DeleteIcon } from './icons/DeleteIcon';
@@ -35,6 +35,7 @@ export type MapProps = {
     /// Stores amount of needed occupation space
     assignGuest?: IGuest,
     occupations?: ISeatOccupation[],
+    focusSeat?: ISeat,
 
     addNewSeat: (seat: LatLngBounds) => Promise<void>,
     removeSeat: (seatId: number) => void,
@@ -175,6 +176,18 @@ function PreserveLocation({ ...props }) {
         }
     })
 
+    useEffect(() => {
+        if (props.focusSeat === null || props.focusSeat === undefined) {
+            return
+        }
+
+        const seat = convertToMapSeat([props.focusSeat])[0]
+        map.flyTo(latLng(seat.bounds?.getCenter()!))
+
+        sessionStorage.setItem("zoom", map.getZoom().toString())
+        sessionStorage.setItem("center", `${seat.bounds!.getCenter().lat.toString()} ${seat.bounds!.getCenter().lng.toString()}`)
+    }, [props.focusSeat])
+
     return (<></>)
 }
 
@@ -291,7 +304,7 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, guests, occup
                             {t("seats")}: {thisSeat.occupied} {t("of")} {targetSeat?.capacity}
                         </Dropdown.Item> :
                         <Dropdown.Item key={"i" + item.id}>
-                            {item.firstName} {item.lastName} + {item.additionalGuestAmount}
+                            {item.firstName} {item.lastName} + {Number.parseInt(item.addadditionalGuestAmount) <= 0 ? "+" + item.additionalGuestAmount : ""}
                         </Dropdown.Item>
                 }
             </Dropdown.Menu>
@@ -364,6 +377,7 @@ export const Map: React.FC<MapProps> = ({
     occupations,
     addNewSeat: setSeats,
     removeSeat,
+    focusSeat,
     t,
     db,
     ...props
@@ -389,13 +403,13 @@ export const Map: React.FC<MapProps> = ({
             maxZoom={3}
             zoomControl={false}
             scrollWheelZoom={true}
-            maxBoundsViscosity={0.8}
+            maxBoundsViscosity={0.3}
             className={styles.map}
             maxBounds={bounds}
             crs={CRS.Simple}
         >
 
-            <PreserveLocation key="pl" />
+            <PreserveLocation key="pl" focusSeat={focusSeat} />
             <SeatDropdown guests={guests} key="sd" t={t} db={db} seats={seats} occupations={occupations} />
             <SeatEditDropdown key="sed" t={t} seats={seats} enableSeatEdit={enableSeatEdit!} removeSeat={removeSeat} />
 

@@ -63,11 +63,17 @@ body {
 
 .titlebar-credit {
   position: absolute;
+  display: flex;
   left: 8px;
   top: 8px;
   z-index: 990999;
-  color: gray !important;
   cursor: default;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.titlebar-credit .text {
+  color: gray !important;
 }
 
 .button {

@@ -172,6 +172,16 @@ export async function getSeats(db: Database, floorId: number): Promise<Array<ISe
     }
 }
 
+export async function getSeatById(db: Database, seatId: number): Promise<ISeat | null> {
+    try {
+        return await db.select("SELECT * FROM seat WHERE id = $1", [seatId])
+    } catch (err) {
+        console.error(`Failed to get seat ${seatId}: ${err}`)
+
+        return null
+    }
+}
+
 export async function addSeat(db: Database, seat: ISeat): Promise<boolean> {
     try {
         await db.execute("INSERT INTO seat (name, capacity, floor_id, lat1, lat2, lng1, lng2) VALUES ($1, $2, $3, $4, $5, $6, $7)",

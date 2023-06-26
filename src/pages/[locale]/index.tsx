@@ -21,6 +21,7 @@ import { useDatabase } from '@/components/DatabaseContext'
 import Database from 'tauri-plugin-sql-api'
 import { makeStaticProps, getStaticPaths } from '@/lib/getStatic'
 import { getTranslatedPath } from '@/lib/redirect'
+import { AppIcon } from '@/components/icons/AppIcon'
 
 const getStaticProps = makeStaticProps(['common'])
 export { getStaticPaths, getStaticProps }
@@ -172,9 +173,9 @@ export default function Home() {
   return (
     <main className="min-h-screen justify-center">
       <div className="main flex flex-col justify-center content-center p-24">
-        <div className="flex items-baseline">
-          <Text h1 className="me-6">{t("app_name")}</Text>
-          <Text h5>pre-v1.0</Text>
+        <div className="flex items-center gap-4 leading-none">
+        <AppIcon width={64} height={64} dark={true} />
+          <Text h1 className="me-1">{t("app_name")}</Text>
         </div>
 
         <Grid.Container gap={8} justify="center">
@@ -228,8 +229,9 @@ export default function Home() {
         </Grid.Container>
       </div>
 
-      <div className='trans'>
-        <Text className="absolute bottom-6 left-0 w-full text-center author">{t("author")} Nicolas Klier</Text>
+      <div className='absolute bottom-6 left-0 w-full text-center'>
+        <Text className="author">{t("author")} Nicolas Klier</Text>
+        <Text small>pre-v1.0</Text>
       </div>
 
       <Modal
