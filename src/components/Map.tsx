@@ -304,7 +304,7 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, guests, occup
                             {t("seats")}: {thisSeat.occupied} {t("of")} {targetSeat?.capacity}
                         </Dropdown.Item> :
                         <Dropdown.Item key={"i" + item.id}>
-                            {item.firstName} {item.lastName} + {Number.parseInt(item.addadditionalGuestAmount) <= 0 ? "+" + item.additionalGuestAmount : ""}
+                            {item.firstName} {item.lastName} + <b>{item.additionalGuestAmount}</b>
                         </Dropdown.Item>
                 }
             </Dropdown.Menu>

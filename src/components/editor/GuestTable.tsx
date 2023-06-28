@@ -87,7 +87,7 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                         if ((guest.additionalGuestCheckedin + 1) > guest.additionalGuestAmount) {
                             return
                         }
-                        
+
                         updateGuestCheckedIn(db, guest.id!, guest.additionalGuestCheckedin + 1)
                         updateGuests()
                     }}>
@@ -114,7 +114,7 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                             bordered
                             zoomed
                         >
-                            <p>{ guest.seatId !== null ? `${t("map.seat")} ${guest.seatId}` : "" }</p>
+                            <p>{guest.seatId !== null ? `${t("map.seat")} ${guest.seatId}` : ""}</p>
                         </User>
                     </Tooltip>
                 );
@@ -132,7 +132,11 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                         <Tooltip
                             content={t("map.show_on_map")}
                         >
-                            <IconButton onClick={() => { if (guest.seatId !== null) focusSeat(guest.seatId!)}}>
+                            <IconButton onClick={() => {
+                                if (guest.seatId !== null) {
+                                    focusSeat(guest.seatId!)
+                                }
+                            }}>
                                 {/* @ts-ignore */}
                                 <LocateIcon color={guest.seatId === null ? "gray" : ""} size={20} />
                             </IconButton>

@@ -364,7 +364,7 @@ export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[
             s.capacity,
             p.guests_amount
         FROM seat AS s
-        LEFT JOIN participant AS p ON p.seat_id = s.id`)
+        LEFT JOIN participant AS p ON p.seat_id = s.id`)        
 
         // Id seen at index
         let indexed = new Map<number, { capacity: number, left: number, guests: number[] | null }>()
@@ -402,7 +402,10 @@ export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[
                 occupied: value.capacity - value.left,
                 guests: value.guests
             })
-        }        
+        }
+
+        console.log("gso: ", result);
+        
         
         return result
     } catch (err) {

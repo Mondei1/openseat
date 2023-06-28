@@ -19,15 +19,15 @@ export const useRedirect = (to: string | null) => {
     to = to || router.asPath
 
     useEffect(() => {
-    const detectedLng = "de"
-    console.log("Current languge: ", detectedLng);
-    
-    if (to!.startsWith('/' + detectedLng) && router.route === '/404') { // prevent endless loop
-        router.replace('/' + detectedLng + router.route)
-        return
-    }
+        const detectedLng = "de"
+        console.log("Current languge: ", detectedLng);
 
-    router.replace('/' + detectedLng + to)
+        if (to!.startsWith('/' + detectedLng) && router.route === '/404') { // prevent endless loop
+            router.replace('/' + detectedLng + router.route)
+            return
+        }
+
+        router.replace('/' + detectedLng + to)
     })
 
     return <></>

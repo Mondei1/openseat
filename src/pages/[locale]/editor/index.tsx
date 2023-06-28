@@ -89,9 +89,13 @@ export default function Router() {
 
           //console.log("Loaded image as Base64", mapUrl)
           setMapState(true)
+          
+          await setSeats((await getSeats(database!, layerId))!)
+          await setOccupations(await getSeatOccupations(database!))
 
-          setSeats((await getSeats(database!, layerId))!)
-          setOccupations(await getSeatOccupations(database!))
+          console.log("Loaded seats on load: ", seats);
+          console.log("Loaded occupations on load: ", occupations);
+          
         }
       }
     }

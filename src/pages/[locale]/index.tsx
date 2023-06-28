@@ -71,6 +71,8 @@ export default function Home() {
 
   useMemo(() => {
     console.log("Config language has changed. Update path to ", getTranslatedPath("/", router.asPath, i18n));
+
+    return  // TODO: Fix translation sometime
     
     if (i18n === undefined && typeof window === "undefined") {
       return
