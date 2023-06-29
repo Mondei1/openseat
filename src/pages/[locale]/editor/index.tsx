@@ -249,6 +249,7 @@ export default function Router() {
         onSelectLayer={selectLayer}
         t={t}
         db={database}
+        occupations={occupations}
       />
       {/*layerId &&
         <Sidebar>
