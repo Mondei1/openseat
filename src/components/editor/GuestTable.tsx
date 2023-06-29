@@ -131,6 +131,7 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                         </Tooltip>
                         <Tooltip
                             content={t("map.show_on_map")}
+                            placement="left"
                         >
                             <IconButton onClick={() => {
                                 if (guest.seatId !== null) {

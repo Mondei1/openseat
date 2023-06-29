@@ -93,8 +93,7 @@ export default function Router() {
           await setSeats((await getSeats(database!, layerId))!)
           await setOccupations(await getSeatOccupations(database!))
 
-          console.log("Loaded seats on load: ", seats);
-          console.log("Loaded occupations on load: ", occupations);
+          console.log("Layer ID is: ", layerId);
           
         }
       }
@@ -154,11 +153,14 @@ export default function Router() {
 
   async function focusSeatFunc(seatId: number) {
     const targetSeat = await getSeatById(database!, seatId)
-    console.log("Focus ", targetSeat);
+    console.log("Focus on seat ", targetSeat);
     
-    if (targetSeat === null) {
+    
+    if (targetSeat === null || targetSeat === undefined) {
       return
     }
+
+    console.log(`Focus on seat ${targetSeat.id} (layer ${targetSeat?.floor_id}) while being on ${layerId}`);
 
     // We need to switch current layer because seat is somewhere else.
     if (targetSeat.floor_id !== layerId) {
@@ -169,7 +171,11 @@ export default function Router() {
 
     setTimeout(() => {
       setFocusSeat(seats.find(x => x.id === seatId))
-    }, 50)
+
+      setTimeout(() => {
+        setFocusSeat(undefined)
+      }, 200)
+    }, 250)
   }
 
   /// Later called by map after startGuestOccupation() has been called.
@@ -231,10 +237,11 @@ export default function Router() {
 
   useEffect(() => {
     loadDatabase().then(async () => {
-      console.log("Set layer id after db init");
+      console.log("%cReload guests and set layer to one.", "background: red; color: yellow; font-size: x-large");
 
       setLayerId(1)
       setGuests((await getGuests(database!))!)
+      await refreshGuests()
     })
   }, [])
 

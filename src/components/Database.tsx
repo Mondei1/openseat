@@ -174,7 +174,13 @@ export async function getSeats(db: Database, floorId: number): Promise<Array<ISe
 
 export async function getSeatById(db: Database, seatId: number): Promise<ISeat | null> {
     try {
-        return await db.select("SELECT * FROM seat WHERE id = $1", [seatId])
+        const result: any[] = await db.select("SELECT * FROM seat WHERE id = $1", [seatId])
+
+        if (result.length > 0) {
+            return result[0]
+        } else {
+            return null
+        }
     } catch (err) {
         console.error(`Failed to get seat ${seatId}: ${err}`)
 

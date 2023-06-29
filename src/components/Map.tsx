@@ -35,7 +35,7 @@ export type MapProps = {
     /// Stores amount of needed occupation space
     assignGuest?: IGuest,
     occupations?: ISeatOccupation[],
-    focusSeat?: ISeat,
+    focusSeat?: ISeat
 
     addNewSeat: (seat: LatLngBounds) => Promise<void>,
     removeSeat: (seatId: number) => void,
@@ -51,7 +51,8 @@ type SeatViewerProps = {
 
     addNewSeat: (seat: LatLngBounds) => Promise<void>,
     occupySeat: (seatId: number, guest: IGuest) => void,
-    enableSeatEdit: boolean
+    enableSeatEdit: boolean,
+    focusSeat?: ISeat
 }
 
 type SeatEditDropdownProps = {
@@ -69,7 +70,7 @@ type SeatDropdownProps = {
     guests: IGuest[]
 }
 
-const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEdit, assignGuest, occupations, occupySeat }) => {
+const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEdit, assignGuest, occupations, occupySeat, focusSeat }) => {
     const [initialPosition, setInitialPosition] = useState(latLng(0, 0))
     const [endPosition, setEndPosition] = useState(latLng(0, 0))
 
@@ -85,19 +86,53 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEd
 
         if (occupations !== undefined) {
             let occupation = occupations.find(o => o.id == x.id)
-            x.occupation = occupation
-            x.divIcon = L.divIcon({ html: `<p>Sitz ${x.name}</p><br /><small>${x.occupation!.left} Plätze frei</small>`, className: "map-marker", iconSize: L.point(128, 32) })
+
+            if (occupation === undefined) {
+                x.divIcon = L.divIcon({ html: `<p>Sitz ${x.name}</p><br /><small>${x.capacity} Plätze frei</small>`, className: "map-marker", iconSize: L.point(128, 32) })
+            } else {
+                x.occupation = occupation
+                x.divIcon = L.divIcon({ html: `<p>Sitz ${x.name}</p><br /><small>${x.occupation!.left} Plätze frei</small>`, className: "map-marker", iconSize: L.point(128, 32) })
+            }
         } else {
             x.divIcon = L.divIcon({ html: `<p>Sitz ${x.name}</p>`, className: "map-marker", iconSize: L.point(128, 32) })
         }
 
         if (assignGuest !== undefined && occupations !== undefined) {
             // Occupation of this seat
+            if (x.occupation === undefined) {
+                x.occupation = {
+                    guests: [],
+                    id: x.id,
+                    left: x.capacity,
+                    occupied: 0
+                }
+            }
+
             if (x.occupation!.left < (assignGuest.additionalGuestAmount + 1)) {
                 x.fillColor = "#F23838"
             }
         }
     })
+
+    useMemo(() => {
+        if (focusSeat === null || focusSeat === undefined) {
+            return
+        }
+
+        const seat = convertToMapSeat([focusSeat])[0]
+
+        const targetSeat = mapSeats.find(x => x.id = focusSeat.id)
+        if (targetSeat === undefined) {
+            return
+        }
+
+        const oldColor = targetSeat.fillColor
+        targetSeat.fillColor = "#a32372"
+
+        setTimeout(() => {
+            targetSeat.fillColor = oldColor
+        }, 1000)
+    }, [focusSeat])
 
     const map = useMapEvents({
         click(e) {
@@ -152,11 +187,9 @@ const SeatViewer: React.FC<SeatViewerProps> = ({ seats, addNewSeat, enableSeatEd
 
     return <>
         {mapSeats.map(x => (
-            <>
-                <Rectangle key={x.id.toString()} color={x.fillColor} bounds={x.bounds!} fillOpacity={0.6}>
-                    <Marker position={x.textPosition!} icon={x.divIcon} />
-                </Rectangle>
-            </>
+            <Rectangle key={x.id.toString() + x.lat1 + x.lng1} color={x.fillColor} bounds={x.bounds!} fillOpacity={0.6}>
+                <Marker position={x.textPosition!} icon={x.divIcon} />
+            </Rectangle>
         ))}
 
         {initialPosition.lat != 0 &&
@@ -177,15 +210,15 @@ function PreserveLocation({ ...props }) {
     })
 
     useEffect(() => {
-        if (props.focusSeat === null || props.focusSeat === undefined) {
-            return
+        console.log("MAP going to focus ", props.focusSeat);
+        
+        if (props.focusSeat !== undefined) {
+            const seat = convertToMapSeat([props.focusSeat])[0]
+            map.flyTo(latLng(seat.bounds?.getCenter()!), 1, { duration: 0.2 })
+
+            sessionStorage.setItem("zoom", map.getZoom().toString())
+            sessionStorage.setItem("center", `${seat.bounds!.getCenter().lat.toString()} ${seat.bounds!.getCenter().lng.toString()}`)
         }
-
-        const seat = convertToMapSeat([props.focusSeat])[0]
-        map.flyTo(latLng(seat.bounds?.getCenter()!))
-
-        sessionStorage.setItem("zoom", map.getZoom().toString())
-        sessionStorage.setItem("center", `${seat.bounds!.getCenter().lat.toString()} ${seat.bounds!.getCenter().lng.toString()}`)
     }, [props.focusSeat])
 
     return (<></>)
@@ -240,16 +273,16 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, guests, occup
             // No seat found. Ignore.
             if (localTargetSeat === null || localTargetSeat === undefined) {
                 console.log("No valid seat clicked ", getSeatAt(map, mapSeats, e.containerPoint), " ", localTargetSeat);
-                
+
                 return (<></>)
             }
 
-            let occupation = occupations?.find(x => x.id == localTargetSeat!.id)?.guests                       
+            let occupation = occupations?.find(x => x.id == localTargetSeat!.id)?.guests
             if (occupation === null || occupation === undefined) {
                 setSeatedGuests([fakeGuest])
             } else {
                 let guestsAtSeat: IGuest[] = []
-                
+
                 for (let i = 0; i < occupation.length; i++) {
                     const guestId = occupation[i]
                     const guest = guests.find(x => x.id === guestId)
@@ -262,7 +295,7 @@ const SeatDropdown: React.FC<SeatDropdownProps> = ({ t, db, seats, guests, occup
                 }
 
                 guestsAtSeat.push(fakeGuest)
-                
+
                 setSeatedGuests(guestsAtSeat)
             }
 
@@ -385,7 +418,9 @@ export const Map: React.FC<MapProps> = ({
     mapWidth *= 0.7
     mapHeight *= 0.7
 
-    let bounds = latLngBounds([0.0, mapWidth], [mapHeight, 0.0])
+    const MARGIN = 250;
+
+    let bounds = latLngBounds([-MARGIN, mapWidth + MARGIN], [mapHeight + MARGIN, -MARGIN])
     let center = bounds.getCenter()
 
     let lastPos = sessionStorage.getItem("center")
@@ -421,6 +456,7 @@ export const Map: React.FC<MapProps> = ({
                 occupySeat={occupySeat}
                 assignGuest={assignGuest}
                 occupations={occupations}
+                focusSeat={focusSeat}
             />
 
             <ImageOverlay

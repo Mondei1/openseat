@@ -73,8 +73,6 @@ export const EditorNavbar: React.FC<EditorNavbarProps> = ({ onEditGuests, onEdit
                     setFloors(copy)
                 }
             })
-        } else {
-            console.log("Couldn't fetch floors since database is null.")
         }
 
     }, [db])
