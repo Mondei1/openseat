@@ -210,8 +210,6 @@ function PreserveLocation({ ...props }) {
     })
 
     useEffect(() => {
-        console.log("MAP going to focus ", props.focusSeat);
-        
         if (props.focusSeat !== undefined) {
             const seat = convertToMapSeat([props.focusSeat])[0]
             map.flyTo(latLng(seat.bounds?.getCenter()!), 1, { duration: 0.2 })

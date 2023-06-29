@@ -158,10 +158,7 @@ export default function Home() {
     const db = await Database.load("sqlite:" + databasePath)
 
     if (db !== null && setDatabase !== null) {
-      console.log("Going to save db to context: ", db);
       setDatabase(db)
-      console.log("Double checK: ", database);
-
     }
 
     router.push({

@@ -129,7 +129,7 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                                 <ChairIcon size={20} />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip
+                        { /*<Tooltip
                             content={t("map.show_on_map")}
                             placement="left"
                         >
@@ -138,10 +138,10 @@ export const GuestTable: React.FC<GuestTableProps> = ({ db, guests, deleteGuest,
                                     focusSeat(guest.seatId!)
                                 }
                             }}>
-                                {/* @ts-ignore */}
+                                {/* @ts-ignore *//*}
                                 <LocateIcon color={guest.seatId === null ? "gray" : ""} size={20} />
                             </IconButton>
-                        </Tooltip>
+                        </Tooltip> */ }
                         <Tooltip
                             content={t("delete")}
                             color="error"

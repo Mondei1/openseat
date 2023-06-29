@@ -225,8 +225,6 @@ export async function getHighestSeatId(db: Database): Promise<number> {
 }
 
 export async function addGuest(db: Database, guest: IGuest): Promise<boolean> {
-    console.log("save ", guest);
-
     try {
         await db.execute("INSERT INTO participant (first_name, last_name, guests_amount, guests_checkedin, checkedin) VALUES ($1, $2, $3, $4, $5)",
             [guest.firstName, guest.lastName, guest.additionalGuestAmount | 0, guest.additionalGuestCheckedin, guest.checkedIn])
@@ -351,7 +349,6 @@ export async function toggleGuestStatus(db: Database, guestId: number) {
 export async function updateGuestCheckedIn(db: Database, guestId: number, guestsCheckedIn: number) {
     try {
         await db.execute(`UPDATE participant SET guests_checkedin = $1 WHERE id = $2`, [guestsCheckedIn, guestId])
-        console.log("Update");
         
     } catch (err) {
         console.error(`Failed to change checked in guests of guest ${guestId}: ${err}`);
@@ -409,9 +406,6 @@ export async function getSeatOccupations(db: Database): Promise<ISeatOccupation[
                 guests: value.guests
             })
         }
-
-        console.log("gso: ", result);
-        
         
         return result
     } catch (err) {

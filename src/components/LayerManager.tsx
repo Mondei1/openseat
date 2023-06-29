@@ -70,8 +70,6 @@ export const LayerManager: React.FC<LayerSelectorProps> = ({ schematics, setSche
         let filenameWithoutExtension = parsedPath.replace(/^.*[\\\/]/, '').split(".")
         filenameWithoutExtension.pop()
 
-        console.log("Selected:", filePath);
-
         setLoadingImage(true)
         const newFloor: IFloor = {
             id: Math.max(...schematics.map(x => x.id)) + 1,
@@ -85,9 +83,6 @@ export const LayerManager: React.FC<LayerSelectorProps> = ({ schematics, setSche
         setLoadingImage(false)
 
         setSchematics(schematics.concat(newFloor))
-
-        console.log("New schematics: ", schematics);
-        
     }
 
     function deleteSchematic(id: number) {

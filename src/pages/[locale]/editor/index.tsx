@@ -63,15 +63,11 @@ export default function Router() {
     let floors = await getFloors(database);
     if (floors === null) return;
 
-    if (floors.length > 0) {
-      console.log("Layer ", layerId);
-      
+    if (floors.length > 0) {      
       if (layerId === undefined) {
         return
       }
 
-      console.log("Search for floor ", layerId, " in ", floors);
-      
       let image = await getFloorImage(database, floors[layerId - 1].id);
 
       if (image === null) return;
@@ -92,9 +88,6 @@ export default function Router() {
           
           await setSeats((await getSeats(database!, layerId))!)
           await setOccupations(await getSeatOccupations(database!))
-
-          console.log("Layer ID is: ", layerId);
-          
         }
       }
     }
